@@ -1,4 +1,20 @@
-# Verificación de ComicReader0.3.0
+# Verificación de ComicReader 0.4.0
+
+30 de octubre de 2026. **31 tests JVM y 11 grupos Android x86_64 PASS**, build debug/release R8 PASS y lint con **0 errores, 24 avisos**. El grupo nuevo prueba selección de ABI, versiones numéricas, prereleases, digest/origen/duplicados/tamaño, rechazo de un archivo alterado y confinamiento real del provider (lectura exclusiva del APK, escritura y traversal rechazados).
+
+Se publicaron el código y la release [v0.4.0](https://github.com/Poiki/ComicReader/releases/tag/v0.4.0) usando el script de publicación: APK ARM64, x86_64, universal y SHA256SUMS. Firma original y alineación16KiB verificadas. La API pública devuelve assets con SHA-256 coincidente con los archivos locales. No se publican claves, sesiones, originales ni cachés.
+
+Snapshot y hashes actuales: [qa-updates.json](qa-updates.json). El `qa-results.json` anterior conserva la entrega0.3.
+
+## Prueba contra la release real
+
+Un APK debug de prueba0.3.1, con el mismo actualizador y certificado, se instaló en el emulador propio y recibió un cómic, página2, favorito y marcador sintéticos. Desde su UI se comprobó: consulta pública de GitHub, detección0.4.0, selección del asset x86_64, descarga completa, digest y firma/paquete/versión aceptados, permiso estándar de instalaciones desde ComicReader y pantalla del instalador «Do you want to update this app?».
+
+**La instalación final no pasó en este emulador Google Play.** El verificador Finsky devolvió REJECT; PackageManager registró `INSTALL_FAILED_VERIFICATION_FAILURE`. El dispositivo conservó0.3.1. No se desactivaron protecciones ni se atribuye una causa más concreta sin evidencia. La descarga/validación y entrega al instalador sí se comprobaron; la actualización instalada de extremo a extremo queda pendiente en otro entorno/dispositivo. No se da por probada a partir de tests sintéticos ni de una instalación por ADB.
+
+Los XML de UI, logs de verificación y metadatos quedan en `.analysis` local. Google ofrece [orientación oficial sobre avisos de Play Protect](https://developers.google.com/android/play-protect/warning-dev-guidance). Una firma correcta para actualizar no garantiza que el sistema autorice instalar. Esta entrega conserva firma de pruebas y no es una publicación en Play Store.
+
+## Historial: entrega 0.3.0
 
 30 de octubre de2026. Windows, JDK21, Gradle9.5.0, AGP9.3.1, compileSdk37/target36. Se usó exclusivamente el emulador propio API36 x86_64 con traducción ARM64, sin cuentas personales. Ninguna tablet física del usuario.
 

@@ -10,6 +10,8 @@ Se rechazan borradores/prereleases, metadatos inválidos, nombres duplicados, AP
 
 El APK temporal se almacena en caché privada. Un ContentProvider no exportado comparte únicamente ese archivo y solo con permisos de lectura por URI. Cancelar, cerrar la actividad o fallar una validación no afecta a cómics ni sesiones. Si se cancela el permiso/instalador, se puede reintentar desde Actualizaciones → Instalar descargada. El APK de una versión ya instalada se retira al abrir de nuevo.
 
+La prueba real0.4 superó descarga, validación y apertura del instalador, pero Play Protect del emulador rechazó la instalación con `INSTALL_FAILED_VERIFICATION_FAILURE`. No se desactivaron protecciones. El permiso de instalar y la coincidencia de firma no sustituyen la autorización final del sistema; [resultado exacto](QA.md).
+
 ## Publicar otra versión
 
 1. Conserva la clave original fuera de Git. Cambiar de certificado impide actualizar estas instalaciones; el cliente lo rechaza. La clave de pruebas actual no se sube a GitHub ni a sus secretos.
