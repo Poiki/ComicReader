@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-30",
+  "version": "0.3.0",
+  "original_apk_unchanged_sha256": "737108cd3ecf7d488eaad92fde3513d6eaf060546af246ec4dce24727b61d4d0",
+  "jvm_suites": [
+    {
+      "name": "org.comicreader.app.CoreTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "org.comicreader.app.DriveTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "org.comicreader.app.TransferFileTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "org.comicreader.app.WebDavTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0
+    }
+  ],
+  "jvm_total": 28.0,
+  "android_smoke_groups_per_abi": 10,
+  "android_abis_tested": [
+    "x86_64",
+    "arm64-v8a (native bridge)"
+  ],
+  "android_runtime": "Own API36 x86_64 emulator; ARM64 native bridge; tablet 2120x3000 and 3000x2120 density320",
+  "mega_native_built_or_executed": true,
+  "mega_sdk_version": "10.21.0",
+  "mega_sdk_commit": "d1c0cb76cb98598d93b9fb0bb89612daeb0fb39c",
+  "mega_native_checks": [
+    "v0.3 ARM64 JNI version10.21.0, private native file IO and cache",
+    "v0.3 ARM64 server rejection for reserved nonexistent account",
+    "Both ABIs previously verified on v0.2"
+  ],
+  "mega_native_elf": [
+    {
+      "abi": "arm64-v8a",
+      "bytes": 26423120,
+      "sha256": "6a3734ea64c555f67dce140a4afabfc02358dd3c1e6169e30b398d642666ed45",
+      "load_alignments": [
+        16384,
+        16384,
+        16384
+      ]
+    },
+    {
+      "abi": "x86_64",
+      "bytes": 26941872,
+      "sha256": "2664c7309e525060c953a8adb9f5b07bf29e6cded4881b3d3e991d2edefe78ea",
+      "load_alignments": [
+        16384,
+        16384,
+        16384
+      ]
+    }
+  ],
+  "release_runtime": [
+    "ARM64 R8 release installed",
+    "Persistent synthetic MEGA catalog and offline cover",
+    "OLED background RGB0,0,0 with light system icons",
+    "Theme changed to light from actual settings UI",
+    "Landscape layout3000x2120",
+    "No process fatal in observed log window"
+  ],
+  "real_cloud_accounts_tested": false,
+  "physical_tablet_tested": false,
+  "battery_benchmarked": false,
+  "lint": {
+    "errors": 0,
+    "warnings": 23
+  },
+  "signature_verified": true,
+  "zipalign_16k_verified": true,
+  "artifacts": [
+    {
+      "path": "ComicReader-0.3.0-OnePlusPad2.apk",
+      "bytes": 27935763,
+      "sha256": "a28e21afca04c25e7617e7e1dd06e1e4cef9440993ee2b00a0b69741f09127c7",
+      "abi": "arm64-v8a",
+      "signing": "Same local debug certificate, R8 release"
+    },
+    {
+      "path": "ComicReader-OnePlusPad2.apk",
+      "bytes": 27935763,
+      "sha256": "a28e21afca04c25e7617e7e1dd06e1e4cef9440993ee2b00a0b69741f09127c7",
+      "abi": "arm64-v8a",
+      "signing": "Same local debug certificate, R8 release"
+    }
+  ],
+  "upgrade_0_2_to_0_3": "PASS: old signed release UI import, bookmark/favorite and page; update without clearing preserves file, page2, bookmark and favorite",
+  "catalog_ui_checks": [
+    "Actual picker Accept saves folder",
+    "Cached folder reopens",
+    "Account isolation and atomic duplicate rejection",
+    "Subfolder/back navigation",
+    "Read/unread filters and pre-download flags",
+    "Dark/OLED real activity backgrounds",
+    "Library/home/last-reader startup and missing/completed fallback"
+  ]
+}

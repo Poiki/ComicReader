@@ -1,0 +1,32 @@
+plugins { id 'com.android.library' }
+
+def sdkOutput = rootProject.file('.local/mega-sdk')
+android {
+    namespace 'org.comicreader.megasdk'
+    compileSdk 37
+    defaultConfig { minSdk 28; consumerProguardFiles 'consumer-rules.pro' }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    sourceSets.named('main') {
+        java.srcDir(new File(sdkOutput, 'java'))
+        java.exclude '**/MegaApiSwing.java', '**/MegaApiAndroid.java', '**/AndroidGfxProcessor.java', '**/MegaUtilsAndroid.java'
+        kotlin.directories.add(new File(sdkOutput, 'kotlin').path)
+        jniLibs.srcDir(new File(sdkOutput, 'jniLibs'))
+        assets.srcDir(new File(sdkOutput, 'licenses'))
+    }
+}
+dependencies {
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.3.20'
+    compileOnly 'org.jetbrains:annotations:23.0.0'
+}
+tasks.register('verifyNativeSdk') {
+    doLast {
+        ['arm64-v8a', 'x86_64'].each { abi ->
+            def library = new File(sdkOutput, "jniLibs/${abi}/libmega.so")
+            if (!library.isFile() || library.length() < 1024)
+                throw new GradleException('Falta el SDK MEGA real. Ejecuta scripts/build-mega-native.ps1; no sirve un AAR de tipos.')
+        }
+        if (!new File(sdkOutput, 'java/nz/mega/sdk/megaJNI.java').isFile())
+            throw new GradleException('Faltan los bindings generados del mismo SDK MEGA.')
+    }
+}
+tasks.named('preBuild').configure { dependsOn 'verifyNativeSdk' }

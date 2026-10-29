@@ -1,0 +1,1 @@
+-keep class nz.mega.sdk.** { *; }
