@@ -34,7 +34,7 @@ Desde 0.3 el selector tiene **Aceptar**. Guarda cuenta, handle y nombre de la ca
 
 Los filtros de lectura usan el progreso por hash cuando existe. Marcar leído/favorito antes de descargar guarda una marca local asociada a cuenta/handle; al obtener el archivo se aplica a su progreso por contenido. Estas marcas previas no se sincronizan entre dispositivos hasta que se conoce el hash. Los nombres de carpetas/archivos y asociaciones se guardan en el espacio privado de la app, excluido de backups. Desconectar MEGA retira la selección de biblioteca y conserva los cómics y progreso locales.
 
-La navegación usa handles de MEGA. Los nombres remotos no se convierten en rutas locales. Descargar guarda un temporal privado, lo valida y hashea, y lo mueve a la biblioteca sin escribir una segunda copia completa. Archivos compatibles: CBZ/ZIP y PDF, máximo 1 GiB.
+La navegación usa handles de MEGA. Los nombres remotos no se convierten en rutas locales. Descargar guarda un temporal privado, lo valida y hashea, y lo mueve a la biblioteca sin escribir una segunda copia completa. Archivos compatibles: CBZ/ZIP, CBR/RAR y PDF, máximo 1 GiB. Desde0.5 se incluyen CBR/RAR en el filtro común: actualizar la carpeta vuelve a incorporar los que las versiones anteriores habían omitido. El CBR descargado conserva el mismo protocolo de identidad SHA-256 y progreso.
 
 El progreso propio se guarda en `.comicreader-state-v1/<UUID-dispositivo>.crp`. Se sincronizan posición, leído, favoritos y marcadores; no credenciales ni cómics automáticamente. Límites: 8 MiB por snapshot, 64 MiB descargados por sync, 128 snapshots y 50.000 cómics. Todos los documentos aceptados se validan antes de la transacción local. Los conflictos se resuelven como explica [SYNC.md](SYNC.md).
 

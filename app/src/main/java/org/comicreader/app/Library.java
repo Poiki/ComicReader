@@ -152,7 +152,7 @@ public final class Library extends SQLiteOpenHelper {
     public record Book(String id, String title, String format, long size) {
         public Book {
             if (id == null || !id.matches("[0-9a-f]{64}") || title == null || title.isBlank() || title.length() > 1024
-                    || !Set.of("cbz", "pdf").contains(format) || size < 0 || size > ComicFiles.MAX_COMIC)
+                    || !Set.of("cbz", "cbr", "pdf").contains(format) || size < 0 || size > ComicFiles.MAX_COMIC)
                 throw new IllegalArgumentException("Identidad de cómic inválida");
         }
     }

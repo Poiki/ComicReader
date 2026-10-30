@@ -145,7 +145,7 @@ public final class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true); LinearLayout navigation = new LinearLayout(this); navigation.setOrientation(LinearLayout.VERTICAL);
         navigation.setPadding(0, 0, 0, Ui.dp(this, 88)); scroll.addView(navigation); content.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
         navigation.addView(section("Almacenamiento del dispositivo"));
-        homeRow(navigation, R.drawable.icon_phone, "Importar archivos", "CBZ, ZIP y PDF", this::pick);
+        homeRow(navigation, R.drawable.icon_phone, "Importar archivos", "CBZ/ZIP, CBR/RAR y PDF", this::pick);
         navigation.addView(section("Biblioteca"));
         homeRow(navigation, R.drawable.icon_history, "Leyendo", null, () -> showLibrary(1));
         homeRow(navigation, R.drawable.icon_book, "Abrir biblioteca", remoteMode ? megaName : "Biblioteca local", () -> showLibrary(0));
@@ -409,9 +409,9 @@ public final class MainActivity extends Activity {
                 case 10 -> { if (remoteMode) refreshMega(); else refresh(); }
                 case 11 -> updater.showSettings();
                 case 3 -> new AlertDialog.Builder(this).setTitle("ComicReader · MIT")
-                        .setMessage("CBZ / ZIP y PDF. Código propio y sin anuncios ni telemetría.\n\nDrive: autorización directa Google (requiere proyecto OAuth propio).\nMEGA: "
+                        .setMessage("CBZ/ZIP, CBR/RAR y PDF. Código propio y sin anuncios ni telemetría.\n\nDrive: autorización directa Google (requiere proyecto OAuth propio).\nMEGA: "
                                 + (MegaClient.instance(this).available() ? "SDK oficial integrado para acceso directo." : "Esta compilación no incluye el SDK nativo.")
-                                + "\nWebDAV HTTPS también disponible.\n\nLos CBR/RAR y 7z no son compatibles en esta versión.")
+                                + "\nWebDAV HTTPS también disponible.\n\nCBR sin contraseña y de un solo volumen. 7z no es compatible.")
                         .setPositiveButton("Aceptar", null).show();
             }
         }).show();

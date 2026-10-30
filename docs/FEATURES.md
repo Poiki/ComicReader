@@ -5,6 +5,7 @@ Esta tabla describe la nueva app. Las funciones observadas en el APK original y 
 | Función | Estado en esta entrega |
 | --- | --- |
 | CBZ/ZIP con páginas JPEG, PNG, WebP, GIF estático y BMP; PDF | Implementado. Orden natural; se ignoran recursos ocultos y `__MACOSX`. |
+| CBR/RAR4 y RAR5 | Implementado desde0.5 en MEGA, otros proveedores e importación local, portadas, lectura y progreso. Sin contraseña ni multivolumen. Extracción de una página con diccionario acotado, orden natural y validación CRC. |
 | Reanudar página, conservar marcadores y estado al pausar | Implementado en SQLite; persistencia serializada entre instancias y recuperación en recreación. |
 | Biblioteca offline e importación múltiple | Implementado; copias propias identificadas por SHA-256, sin modificar originales. |
 | Búsqueda, favoritos, sin leer/en curso/terminados y orden por título | Implementado; marcar terminado es explícito. La primera página se clasifica como sin leer. |
@@ -28,7 +29,7 @@ Esta tabla describe la nueva app. Las funciones observadas en el APK original y 
 | Exportar/importar progreso | Implementado mediante documento `.crp`, validación completa y transacción. No exporta cuentas ni sesiones. |
 | Mostrar errores sin perder lectura local | Implementado. Sin resultados inventados cuando fallan autenticación, cuotas, parsing o TLS. |
 | WebDAV HTTPS adicional | Implementado, probado con respuestas sintéticas; servidor real pendiente. |
-| CBR/RAR/7z, carpetas de imágenes, escaneo de colecciones | Pendiente. Hace falta elegir codecs/flujo y medir su coste antes de ampliar formatos. |
+| 7z, carpetas de imágenes, escaneo de colecciones | Pendiente. |
 | Doble página, recorte de márgenes, corrección de color, lectura continua | Pendiente. Se priorizó el núcleo comprobable; no se anuncian como implementados. |
 | ComicInfo/índice PDF, transición automática al siguiente volumen | Pendiente. No se infiere orden de series por el nombre. |
 | Dropbox, OneDrive, Komga, Kavita y SMB nativos | Inventariados en el APK, pendientes en la nueva app. Algunos pueden exponerse por WebDAV. |

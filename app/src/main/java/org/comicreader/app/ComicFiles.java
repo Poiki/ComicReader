@@ -13,7 +13,7 @@ public final class ComicFiles {
         return dot < 0 ? "" : name.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
     public static boolean supported(String name) {
-        return Set.of("cbz", "zip", "pdf").contains(extension(name));
+        return Set.of("cbz", "zip", "cbr", "rar", "pdf").contains(extension(name));
     }
     public static boolean image(String name) {
         String normalized = name.replace('\\', '/');

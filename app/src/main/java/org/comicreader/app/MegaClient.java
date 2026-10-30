@@ -112,7 +112,7 @@ final class MegaClient {
     }
     synchronized File download(Node node) throws Exception {
         connected();
-        if (node == null || node.directory || !ComicFiles.supported(node.name)) throw new IOException("Selecciona un CBZ, ZIP o PDF de MEGA");
+        if (node == null || node.directory || !ComicFiles.supported(node.name)) throw new IOException("Selecciona un CBZ/ZIP, CBR/RAR o PDF de MEGA");
         MegaNode remote = api.getNodeByHandle(node.handle);
         return receive(remote, ComicFiles.MAX_COMIC);
     }

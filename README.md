@@ -1,6 +1,6 @@
 # ComicReader
 
-Lector Android con código propio MIT, lectura offline y sincronización directa con MEGA y Google Drive. Android 9/API28 o posterior.
+Lector Android CBZ/ZIP, CBR/RAR y PDF, con código propio MIT, lectura offline y sincronización directa con MEGA y Google Drive. Android 9/API28 o posterior.
 
 ## Instalar en OnePlus Pad 2
 
@@ -19,6 +19,10 @@ El botón **Filtrar biblioteca** muestra todos, leyendo, sin leer, leídos y fav
 **Ajustes → Tema** permite claro, oscuro o negro OLED; **Pantalla de inicio** permite biblioteca, conexiones/configuración o último cómic incompleto. Si este ya está terminado o no está disponible localmente, abre la biblioteca. El tema cambia también los formularios y controles del lector; no altera los colores del cómic.
 
 MEGA admite segundo factor. La contraseña y el código 2FA no se guardan; la sesión propia se cifra mediante Android Keystore. El SDK MEGA real está incluido.
+
+Desde 0.5 se muestran y leen **CBR/RAR**, incluidos RAR4 y RAR5 comprimidos/sólidos, tanto desde MEGA como en importación local y otros proveedores. Tras actualizar usa **Ajustes → Actualizar biblioteca** para volver a consultar la carpeta: el catálogo antiguo había omitido los CBR. Las portadas y el progreso usan el mismo flujo que CBZ. No hay extracción completa al disco.
+
+Límites RAR: archivo de un solo volumen y sin contraseña, 64 MiB por entrada/diccionario y 4 GiB descomprimidos en total. Los archivos sólidos pueden necesitar repetir la descompresión de páginas anteriores al retroceder; se conserva la caché/precarga limitada. No se convierte automáticamente un ZIP renombrado como CBR. El decodificador Junrar conserva su [licencia UnRAR y atribución](THIRD_PARTY_NOTICES.md), independiente del MIT del código propio.
 
 Drive también usa autorización directa dentro de la app. Antes de usar una cuenta Google hay que [registrar el paquete y la firma en Google Cloud](docs/CLOUD-NATIVE.md). WebDAV HTTPS queda disponible para otros servidores.
 
@@ -52,6 +56,6 @@ Los checks esperan una instalación de pruebas sin datos personales. El segundo 
 
 Decodificación ajustada a pantalla, máximo de 3 megapíxeles por imagen, caché del lector de 24 MiB y una precarga. Las portadas tienen un trabajador, cola acotada y caché de 8 MiB. La precarga se evita en ahorro de batería o dispositivos low-RAM. No hay anuncios, analítica, escaneo global, servicios permanentes ni pantalla encendida por defecto. Se solicita desconexión local de MEGA al pausar o finalizar el sync, conservando la sesión cifrada.
 
-No se ha medido la autonomía en una tablet física ni una mejora porcentual frente al original. El login correcto, las descargas y el sync con cuentas reales quedan por comprobar. CBR/RAR/7z, doble página y lectura continua están pendientes. Las copias locales de cómics no tienen cifrado adicional; desinstalar borra los datos privados. Los conflictos remotos se resuelven por cómic completo, con los límites descritos en [SYNC](docs/SYNC.md).
+No se ha medido la autonomía en una tablet física ni una mejora porcentual frente al original. Las transferencias y el sync con cuentas reales no se cubren con los fixtures de pruebas. 7z, doble página y lectura continua están pendientes. Las copias locales de cómics no tienen cifrado adicional; desinstalar borra los datos privados. Los conflictos remotos se resuelven por cómic completo, con los límites descritos en [SYNC](docs/SYNC.md).
 
 [Investigación del APK](docs/ANALYSIS.md) · [Revisión y limpieza](docs/CLEANUP.md) · [Licencias](THIRD_PARTY_NOTICES.md)

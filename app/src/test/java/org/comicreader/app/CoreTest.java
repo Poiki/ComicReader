@@ -16,7 +16,7 @@ public class CoreTest {
     }
     @Test public void hiddenFilesAreNotPages() {
         assertTrue(ComicFiles.image("book/02.JPG")); assertFalse(ComicFiles.image("__MACOSX/02.jpg"));
-        assertFalse(ComicFiles.image("book/.thumb.jpg")); assertFalse(ComicFiles.supported("test.cbr"));
+        assertFalse(ComicFiles.image("book/.thumb.jpg")); assertTrue(ComicFiles.supported("test.cbr"));
     }
     @Test public void copyEnforcesActualBytesAndCancellation() throws Exception {
         assertEquals(3, ComicFiles.copy(new ByteArrayInputStream(new byte[3]), new ByteArrayOutputStream(), 3));

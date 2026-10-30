@@ -14,7 +14,7 @@ final class Importer {
         try (Cursor cursor = context.getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) name = cursor.getString(0);
         }
-        if (name == null || !ComicFiles.supported(name)) throw new IOException("Selecciona un CBZ, ZIP o PDF");
+        if (name == null || !ComicFiles.supported(name)) throw new IOException("Selecciona un CBZ/ZIP, CBR/RAR o PDF");
         try (InputStream in = context.getContentResolver().openInputStream(uri)) {
             if (in == null) throw new IOException("El proveedor no puede abrir el documento");
             return fromStream(context, name, in);
@@ -60,7 +60,7 @@ final class Importer {
     private static Library.Book finish(Context context, String title, File staged, byte[] digest, long size) throws IOException {
         StringBuilder hash = new StringBuilder();
         for (byte value : digest) hash.append(String.format(Locale.ROOT, "%02x", value & 255));
-        String format = ComicFiles.extension(title).equals("pdf") ? "pdf" : "cbz";
+        String format = switch (ComicFiles.extension(title)) { case "pdf" -> "pdf"; case "cbr", "rar" -> "cbr"; default -> "cbz"; };
         Library.Book book = new Library.Book(hash.toString(), title, format, size);
         try (PageSource pages = new PageSource(staged, format)) { Library.get(context).add(book, staged, pages.count()); }
         return book;

@@ -56,3 +56,11 @@ Fallback Findings: sin nueva release/versión igual → resultado explícito, no
 Passes: reglas acotadas, un solo cliente OkHttp existente, sin dependencia ni servicio nuevo, provider de un único archivo, fichero parcial retirado, cancelación y verificación conservadas, script de release sin claves en Git/Actions. Sin shims de autenticación ni instalador silencioso. La app y release conservan el certificado previo. El test de actualización completa por red se registra después de publicar en QA; no se da por probado por un parser sintético. No hubo revisión independiente de este cambio.
 
 Cierre de publicación: repo y release públicos; consulta/descarga/validación y handoff al instalador comprobados contra GitHub real. La verificación externa del sistema rechazó la instalación en el emulador, documentada como límite abierto en QA, sin bypass. Se retiraron de main los sidecars `.idsig` generados y se añadió su exclusión; contienen firmas públicas, no claves privadas. No se reescribe historial ni se fuerza el push.
+
+## Seguimiento0.5: CBR/RAR
+
+Scope: formato común, importador, PageSource/RarPages, enum del libro, MIME y mensajes; fixture/tests/licencias y release. Plan previo: PLAN-CBR. Behavior Lock:31→36 JVM,12 grupos Android x86_64/ARM64 PASS; build/R8/lint PASS. Sin cambios en cuentas, sync ni migración/borrado de datos.
+
+Fallback Findings: se elimina el rechazo común de CBR; no se cambia solo la extensión ni se hace fallback ZIP cuando falla RAR. Contraseña, volumen, CRC, cabeceras y límites dan error. Replay sólido verifica predecesores explícitamente porque el skip del proveedor puede registrar e ignorar fallos; una página dañada no se publica como válida. Las salidas son arrays de tamaño declarado y las rutas de archivo no se usan como destinos. No se añaden hilos de extracción, binding JNI, conversión completa aZIP ni escaneo recursivo.
+
+Passes: reutilizar filtro, caché, importación por movimiento y progress; lector RAR separado para testear sin Android; actualizar expectativa del test antiguo; fixtures propios y RAR5 real sólido; atribuciones no presentadas como MIT. Sin revisión independiente. Riesgos restantes y métodos efectivamente probados: QA-0.5.

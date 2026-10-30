@@ -1,4 +1,8 @@
-# Verificación de ComicReader 0.4.0
+# Verificación de ComicReader
+
+Entrega actual **0.5.0 (CBR/RAR)**: [pruebas y límites](QA-0.5.md). La evidencia de0.4/0.3 se conserva debajo como historial.
+
+## Historial0.4.0
 
 30 de octubre de 2026. **31 tests JVM y 11 grupos Android x86_64 PASS**, build debug/release R8 PASS y lint con **0 errores, 24 avisos**. El grupo nuevo prueba selección de ABI, versiones numéricas, prereleases, digest/origen/duplicados/tamaño, rechazo de un archivo alterado y confinamiento real del provider (lectura exclusiva del APK, escritura y traversal rechazados).
 

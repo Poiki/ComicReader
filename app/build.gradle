@@ -7,8 +7,8 @@ android {
         applicationId 'org.comicreader.app'
         minSdk 28
         targetSdk 36
-        versionCode 4
-        versionName '0.4.0'
+        versionCode 5
+        versionName '0.5.0'
         testInstrumentationRunner 'org.comicreader.app.SmokeInstrumentation'
     }
     compileOptions {
@@ -17,6 +17,7 @@ android {
         coreLibraryDesugaringEnabled true
     }
     sourceSets.androidTest.java.srcDir('src/nativeTest/java')
+    sourceSets.androidTest.assets.srcDir('src/test/resources')
     splits {
         abi {
             enable true
@@ -30,6 +31,7 @@ android {
 
 dependencies {
     implementation project(':mega-sdk')
+    implementation 'com.github.junrar:junrar:8.1.2'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.google.android.gms:play-services-auth:22.0.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'

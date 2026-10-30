@@ -11,6 +11,7 @@ final class PageSource implements AutoCloseable {
     private ZipFile zip;
     private PdfRenderer pdf;
     private ParcelFileDescriptor descriptor;
+    private RarPages rar;
     private final List<ZipEntry> entries = new ArrayList<>();
 
     PageSource(File file, String format) throws IOException {
@@ -18,6 +19,8 @@ final class PageSource implements AutoCloseable {
             if (format.equals("pdf")) {
                 descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
                 pdf = new PdfRenderer(descriptor);
+            } else if (format.equals("cbr")) {
+                rar = new RarPages(file);
             } else {
                 zip = new ZipFile(file);
                 Enumeration<? extends ZipEntry> iterator = zip.entries(); int seen = 0;
@@ -37,7 +40,7 @@ final class PageSource implements AutoCloseable {
             if (count() == 0 || count() > Progress.MAX_PAGES) throw new IOException("El cómic debe contener entre 1 y 10000 páginas");
         } catch (IOException | RuntimeException e) { close(); throw e; }
     }
-    int count() { return pdf != null ? pdf.getPageCount() : entries.size(); }
+    int count() { return pdf != null ? pdf.getPageCount() : rar != null ? rar.count() : entries.size(); }
 
     Bitmap render(int index, int width, int height) throws IOException {
         if (index < 0 || index >= count()) throw new IOException("Página fuera de rango");
@@ -52,22 +55,26 @@ final class PageSource implements AutoCloseable {
                 return bitmap;
             }
         }
-        ZipEntry entry = entries.get(index);
+        ZipEntry entry = rar == null ? entries.get(index) : null;
+        byte[] rarImage = rar == null ? null : rar.read(index);
         BitmapFactory.Options options = new BitmapFactory.Options(); options.inJustDecodeBounds = true;
-        try (InputStream in = ComicFiles.limited(zip.getInputStream(entry), ComicFiles.MAX_PAGE_BYTES)) { BitmapFactory.decodeStream(in, null, options); }
+        if (rarImage != null) BitmapFactory.decodeByteArray(rarImage, 0, rarImage.length, options);
+        else try (InputStream in = ComicFiles.limited(zip.getInputStream(entry), ComicFiles.MAX_PAGE_BYTES)) { BitmapFactory.decodeStream(in, null, options); }
         if (options.outWidth <= 0 || options.outHeight <= 0
                 || (long) options.outWidth * options.outHeight > 100_000_000L)
             throw new IOException("Página no válida o imagen de más de 100 megapíxeles");
         options.inSampleSize = ComicFiles.sampleSize(options.outWidth, options.outHeight, width, height);
         options.inJustDecodeBounds = false; options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         Bitmap bitmap;
-        try (InputStream in = ComicFiles.limited(zip.getInputStream(entry), ComicFiles.MAX_PAGE_BYTES)) { bitmap = BitmapFactory.decodeStream(in, null, options); }
-        if (bitmap == null) throw new IOException("No se puede decodificar " + entry.getName());
+        if (rarImage != null) bitmap = BitmapFactory.decodeByteArray(rarImage, 0, rarImage.length, options);
+        else try (InputStream in = ComicFiles.limited(zip.getInputStream(entry), ComicFiles.MAX_PAGE_BYTES)) { bitmap = BitmapFactory.decodeStream(in, null, options); }
+        if (bitmap == null) throw new IOException("No se puede decodificar la página " + (index + 1));
         return bitmap;
     }
     @Override public void close() throws IOException {
         if (pdf != null) { pdf.close(); pdf = null; }
         if (descriptor != null) { descriptor.close(); descriptor = null; }
         if (zip != null) { zip.close(); zip = null; }
+        if (rar != null) { rar.close(); rar = null; }
     }
 }

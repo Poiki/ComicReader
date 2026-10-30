@@ -58,6 +58,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             testLibraryUx(context); pass("MEGA library navigation, read filters, offline flags and dark/OLED themes");
             testStartup(context); pass("Configurable library/home/reader startup and unavailable/completed fallback");
             testUpdates(context); pass("Release metadata, ABI selection, URL/digest validation, APK identity and provider confinement");
+            testRar(context); pass("Real RAR4/RAR5 import, image decode, cover, reader navigation and MEGA catalog visibility");
             results.putString("stream", "PASS: " + passed + " Android checks\n"); finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringWriter trace = new StringWriter(); failure.printStackTrace(new PrintWriter(trace));
@@ -443,6 +444,49 @@ public final class SmokeInstrumentation extends Instrumentation {
     private org.json.JSONObject updateAsset(String name) throws Exception {
         return new org.json.JSONObject().put("name", name).put("state", "uploaded").put("size", 10)
                 .put("digest", "sha256:" + "0".repeat(64)).put("browser_download_url", ReleaseInfo.REPOSITORY + "/releases/download/v0.5.0/" + name);
+    }
+    private void testRar(Context context) throws Exception {
+        Library library = Library.get(context);
+        for (String fixture : new String[]{"rar4-stored.cbr", "rar5-solid.cbr"}) {
+            File download = File.createTempFile("cbr-", ".part", context.getCacheDir());
+            try (InputStream input = getContext().getAssets().open("comics/" + fixture); OutputStream output = new FileOutputStream(download)) {
+                ComicFiles.copy(input, output, ComicFiles.MAX_COMIC);
+            }
+            Library.Book book = Importer.fromDownload(context, fixture, download);
+            try {
+                check(book.format().equals("cbr") && !download.exists(), "RAR download must move into the library as cbr");
+                try (PageSource pages = new PageSource(library.file(book), book.format())) {
+                    check(pages.count() == 3, "Ignore hidden RAR resources");
+                    int[] colors = {Color.RED, Color.GREEN, Color.BLUE};
+                    for (int page : new int[]{0, 2, 1, 0}) {
+                        Bitmap bitmap = pages.render(page, 120, 180);
+                        check(bitmap.getPixel(30, 30) == colors[page], "RAR decode/natural order after seek"); bitmap.recycle();
+                    }
+                }
+                MegaLibrary catalog = MegaLibrary.get(context);
+                catalog.replace("rar-owner", 500, "CBR", List.of(new MegaClient.Node(501, "Example.CBR", false, book.size()), new MegaClient.Node(502, "Example.RAR", false, book.size())));
+                check(catalog.snapshot("rar-owner", 500).entries().size() == 2, "MEGA must keep both CBR and RAR files");
+                catalog.link(context, "rar-owner", 501, book);
+                check(book.id().equals(catalog.snapshot("rar-owner", 500).entries().get(0).bookId()), "MEGA links downloaded RAR to content progress");
+                Activity reader = startActivitySync(new Intent(context, ReaderActivity.class).putExtra("id", book.id()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                try {
+                    waitForIdleSync(); waitForDescription(reader, "Página 1 de");
+                    setAccessiblePage(reader, 2); waitForDescription(reader, "Página 3 de");
+                    setAccessiblePage(reader, 0); waitForDescription(reader, "Página 1 de");
+                    CoverCache[] cache = {null}; CoverCache.CoverView[] cover = {null}; boolean[] loaded = {false};
+                    try {
+                        runOnMainSync(() -> { cache[0] = new CoverCache(reader); cover[0] = new CoverCache.CoverView(reader); cache[0].bind(cover[0], book); });
+                        for (int i = 0; i < 150 && !loaded[0]; i++) {
+                            runOnMainSync(() -> loaded[0] = loadedCovers(cover[0]) == 1); if (!loaded[0]) Thread.sleep(20);
+                        }
+                        check(loaded[0], "CBR cover must decode through the normal cache");
+                    } finally { runOnMainSync(() -> { if (cache[0] != null) cache[0].close(); }); }
+                } finally { runOnMainSync(reader::finish); waitForIdleSync(); }
+            } finally {
+                // Keep one CBR beside the base CBZ/PDF fixtures for manual release verification.
+                if (fixture.equals("rar4-stored.cbr")) library.remove(book);
+            }
+        }
     }
     private void testUpdates(Context context) throws Exception {
         org.json.JSONObject arm = updateAsset("ComicReader-arm64-v8a.apk"), x86 = updateAsset("ComicReader-x86_64.apk");
