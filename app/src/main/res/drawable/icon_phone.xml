@@ -1,1 +1,7 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#111111" android:fillType="evenOdd" android:pathData="M6,1h12a2,2 0,0 1,2 2v18a2,2 0,0 1,-2 2H6a2,2 0,0 1,-2 -2V3a2,2 0,0 1,2 -2 M7,4v15h10V4z M10,21h4v1h-4z"/></vector>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Google Material Icons (Apache-2.0), smartphone; converted from SVG to Android vector.
+     Source commit: 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#111111" android:pathData="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z" />
+</vector>

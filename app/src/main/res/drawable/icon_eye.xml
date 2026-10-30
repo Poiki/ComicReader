@@ -1,1 +1,7 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#111111" android:fillType="evenOdd" android:pathData="M1,12Q12,-2 23,12Q12,26 1,12 M6,12a6,6 0,1 0,12 0a6,6 0,1 0,-12 0 M9,12a3,3 0,1 0,6 0a3,3 0,1 0,-6 0"/></vector>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Google Material Icons (Apache-2.0), remove_red_eye; converted from SVG to Android vector.
+     Source commit: 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#111111" android:pathData="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+</vector>

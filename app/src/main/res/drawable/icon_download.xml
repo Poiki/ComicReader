@@ -1,1 +1,7 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#111111" android:fillType="evenOdd" android:pathData="M9,2h6v10h5l-8,8l-8,-8h5z M3,22h18v2H3z"/></vector>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Google Material Icons (Apache-2.0), file_download; converted from SVG to Android vector.
+     Source commit: 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#111111" android:pathData="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+</vector>

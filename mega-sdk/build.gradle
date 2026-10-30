@@ -23,10 +23,10 @@ tasks.register('verifyNativeSdk') {
         ['arm64-v8a', 'x86_64'].each { abi ->
             def library = new File(sdkOutput, "jniLibs/${abi}/libmega.so")
             if (!library.isFile() || library.length() < 1024)
-                throw new GradleException('Falta el SDK MEGA real. Ejecuta scripts/build-mega-native.ps1; no sirve un AAR de tipos.')
+                throw new GradleException('Native MEGA SDK missing. Run scripts/build-mega-native.ps1; a types-only AAR is not sufficient.')
         }
         if (!new File(sdkOutput, 'java/nz/mega/sdk/megaJNI.java').isFile())
-            throw new GradleException('Faltan los bindings generados del mismo SDK MEGA.')
+            throw new GradleException('Generated bindings from the matching MEGA SDK build are missing.')
     }
 }
 tasks.named('preBuild').configure { dependsOn 'verifyNativeSdk' }

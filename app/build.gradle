@@ -1,4 +1,6 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+}
 
 android {
     namespace 'org.comicreader.app'
@@ -7,8 +9,8 @@ android {
         applicationId 'org.comicreader.app'
         minSdk 28
         targetSdk 36
-        versionCode 5
-        versionName '0.5.0'
+        versionCode 6
+        versionName '0.6.0'
         testInstrumentationRunner 'org.comicreader.app.SmokeInstrumentation'
     }
     compileOptions {
@@ -18,6 +20,11 @@ android {
     }
     sourceSets.androidTest.java.srcDir('src/nativeTest/java')
     sourceSets.androidTest.assets.srcDir('src/test/resources')
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
     splits {
         abi {
             enable true
@@ -26,7 +33,12 @@ android {
             universalApk true
         }
     }
-    buildTypes { release { minifyEnabled true; proguardFiles getDefaultProguardFile('proguard-android-optimize.txt') } }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+        }
+    }
 }
 
 dependencies {
