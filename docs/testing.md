@@ -47,6 +47,6 @@ Live MEGA/Drive/WebDAV account workflows, real Wi-Fi/mobile handovers during tra
 
 Grouped settings checks verify semantic section headings, current-value summaries, visible scrolling to lower sections, direct cover/sync preferences and retained provider routes. Existing theme, startup, language and mobile-data checks use the reorganized panel. Tablet/phone portrait and landscape layouts require separate inspection; physical hardware remains outside these checks.
 
-## 0.7.0 preview validation
+## 0.7.0 validation
 
-The debug and minified release builds, 39 JVM tests, Java formatting and Android lint are checked locally. The updated 19-group Android runner has not been executed for this version: the test emulator fails to initialize its WHPX partition (`0x80070005`), and software emulation does not boot. There is no connected physical device. Screen appearance, the new UI routes and live MEGA cancellation therefore still require device testing. This build is distributed as a prerelease rather than the automatic-update target.
+The debug and minified release builds, 39 JVM tests, Java formatting and Android lint are checked locally. The updated 19-group Android runner has not been executed for this version: the test emulator fails to initialize its WHPX partition (`0x80070005`), and software emulation does not boot. There is no connected physical device. Screen appearance, the new UI routes and live MEGA cancellation therefore still require device testing.
