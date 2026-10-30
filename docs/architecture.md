@@ -8,7 +8,7 @@ All first-party classes live in `app/src/main/java/org/comicreader/app`.
 
 | Area | Classes |
 | --- | --- |
-| Library UI and navigation | `MainActivity`, `Ui`, `CoverCache` |
+| Library UI and navigation | `MainActivity`, `Ui`, `AppLanguage`, `CoverCache` |
 | Reading and rendering | `ReaderActivity`, `PageView`, `PageSource`, `RarPages` |
 | Local data and import | `Library`, `Progress`, `ComicFiles`, `Importer` |
 | Cloud and account access | `Cloud`, `SyncJob`, `Secrets`, `DriveAuth`, `DriveClient`, `MegaClient`, `MegaLibrary`, `WebDav`, `TransferFile` |
@@ -26,7 +26,11 @@ Imported files are hashed once with SHA-256, validated and moved or copied into 
 
 The UI requests rendering on a serial worker. At most the active request and latest pending render remain relevant; stale work cannot replace a newer page. One page is prefetched in the current direction unless the app is paused, Android reports low RAM or battery saver is enabled.
 
-Decoded bitmaps are capped at 3 megapixels. The reader cache is 24 MiB; cover thumbnails are at most 192×288 with an 8 MiB memory cache, a 32 MiB/2,000-file disk cache, one worker and a queue of 32. Visible MEGA comics use native thumbnails or temporary full downloads for first-page extraction. Originals are discarded after generation. Network/battery policy and cancellation give foreground work priority. Stopping the reader clears visible bitmap references and the bitmap cache. A decode already in progress may finish; RAR decoder state can remain until the reader is destroyed.
+Decoded bitmaps are capped at 3 megapixels; the reader cache is 24 MiB. `CoverStore` owns an application-context 8 MiB memory cache and 32 MiB/2,000-file disk cache, with thumbnails at most 192×288. It serializes generation so UI and background requests reuse a result. `CoverCache` keeps weak cell targets, a 32-entry UI queue and a coalesced directory observer. Closing an Activity cancels its view work without clearing shared cover data.
+
+`CoverJob` is a launch-triggered, one-shot `JobScheduler` service. It prepares local books and traverses the saved MEGA root independently of Activity lifetime. A 24 MiB/1,500-file background budget reserves space for interactive requests and prevents eviction loops. Explicit UI work and sync take priority through a balanced cancellation gate; completion can schedule the batch again. Native file-ownership rules and provider/decoder validation remain intact. Expedited startup has a regular constrained alternative for older Android or rejected quota. Battery checks remain in the worker/receiver because expedited jobs disallow that scheduler constraint.
+
+Stopping the reader clears its visible bitmap references and reader cache. A decode already in progress may finish; RAR decoder state can remain until reader destruction.
 
 ZIP uses `ZipFile`, PDF uses Android `PdfRenderer`, and RAR uses Junrar with a 64 MiB dictionary budget. RAR pages are extracted synchronously into a declared-size array, never into archive-provided filesystem paths. Solid predecessors are replayed and verified explicitly. Backward seeks in solid archives can cost more CPU.
 

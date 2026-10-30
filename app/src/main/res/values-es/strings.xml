@@ -15,7 +15,7 @@
     <string name="choose_folder_empty">"Sin subcarpetas. Pulsa Aceptar para usar esta carpeta como biblioteca."</string>
     <string name="covers_any">"Wi-Fi y datos móviles"</string>
     <string name="covers_downloaded">"Solo cómics descargados"</string>
-    <string name="covers_explanation">"Si MEGA no tiene miniatura, la app descarga el archivo una vez para generar la portada y después borra esa copia temporal. Las portadas se guardan en este dispositivo. La tarea se detiene al salir o iniciar una descarga, y se pausa si queda poca batería."</string>
+    <string name="covers_explanation">"Si MEGA no tiene miniatura, la app descarga el archivo una vez para generar la portada y después borra esa copia temporal. Al abrir prepara las portadas que faltan en segundo plano, incluidas las subcarpetas de tu biblioteca MEGA guardada. Puedes seguir leyendo o salir de la app. Tus descargas tienen prioridad. Android puede pausar la tarea por la conexión, la batería o sus límites de ejecución. La caché limitada reserva espacio para los cómics que abras."</string>
     <string name="covers_info">"Cómo funciona"</string>
     <string name="covers_wifi">"Wi-Fi / redes sin límite"</string>
     <string name="delete_local_copy_message">"Se eliminará solo la copia privada. Conservaremos el progreso y el archivo original."</string>

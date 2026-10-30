@@ -40,6 +40,7 @@ final class Cloud {
     static synchronized int sync(Context context) throws Exception {
         SharedPreferences preferences = context.getSharedPreferences("cloud", 0);
         String provider = preferences.getString("provider", "");
+        CoverJob.pause(context);
         try {
             int count =
                     switch (provider) {
@@ -67,6 +68,7 @@ final class Cloud {
                     android.util.Log.w("ComicReader", "MEGA could not disconnect after syncing", e);
                 }
             }
+            CoverJob.resume(context);
         }
     }
 

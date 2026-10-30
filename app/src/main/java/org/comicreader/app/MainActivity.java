@@ -212,6 +212,7 @@ public final class MainActivity extends Activity {
         bottomBar = new LinearLayout(this);
         bottomBar.setGravity(Gravity.CENTER_VERTICAL);
         root.addView(bottomBar, new LinearLayout.LayoutParams(-1, Ui.dp(this, 56)));
+        CoverJob.schedule(this, true);
         if (saved != null
                 ? saved.getBoolean("home", false)
                 : getSharedPreferences("appearance", 0)
@@ -586,6 +587,8 @@ public final class MainActivity extends Activity {
         super.onResume();
         resumed = true;
         covers.setPaused(busy);
+        covers.observe(() -> adapter.notifyDataSetChanged());
+        CoverJob.schedule(this, true);
         if (!busy) refresh();
         Cloud.schedule(this);
         updater.onResume();
@@ -1105,6 +1108,7 @@ public final class MainActivity extends Activity {
                                     .putString("covers", modes[which])
                                     .apply();
                             covers.setPaused(!resumed || busy);
+                            CoverJob.schedule(this, true);
                             refresh();
                         })
                 .setNegativeButton(R.string.action_cancel, null)
@@ -1861,6 +1865,7 @@ public final class MainActivity extends Activity {
         for (Button action : actions) action.setEnabled(false);
         worker.execute(
                 () -> {
+                    CoverJob.pause(this);
                     try {
                         T result = work.run();
                         runOnUiThread(
@@ -1883,6 +1888,8 @@ public final class MainActivity extends Activity {
                                     Ui.error(this, e);
                                     refresh();
                                 });
+                    } finally {
+                        CoverJob.resume(this);
                     }
                 });
     }
@@ -1946,7 +1953,7 @@ public final class MainActivity extends Activity {
         resumed = false;
         updater.onPause();
         covers.setPaused(true);
-        if (!busy && MegaClient.instance(this).loggedIn())
+        if (!busy && !CoverJob.running() && MegaClient.instance(this).loggedIn())
             worker.execute(
                     () -> {
                         try {

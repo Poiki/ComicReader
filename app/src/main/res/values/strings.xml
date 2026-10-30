@@ -15,7 +15,7 @@
     <string name="choose_folder_empty">"No subfolders. Choose OK to use this folder as your library."</string>
     <string name="covers_any">"Wi-Fi and mobile data"</string>
     <string name="covers_downloaded">"Downloaded comics only"</string>
-    <string name="covers_explanation">"For comics without a MEGA thumbnail, the app downloads the file once to generate a cover, then deletes that temporary copy. Covers are cached on this device. Background work stops when you leave the app or start a download, and pauses when battery is low."</string>
+    <string name="covers_explanation">"For comics without a MEGA thumbnail, the app downloads the file once to generate a cover, then deletes that temporary copy. At startup it prepares missing covers in the background, including subfolders of your saved MEGA library. You can keep reading or leave the app. Explicit downloads take priority. Android may pause work for the network, battery or scheduling limits. The bounded cache leaves room for covers you open."</string>
     <string name="covers_info">"How it works"</string>
     <string name="covers_wifi">"Wi-Fi / unmetered networks"</string>
     <string name="delete_local_copy_message">"Only the private copy will be deleted. Progress and the original file will be kept."</string>

@@ -19,7 +19,7 @@ Releases currently retain the original **test signing certificate**. The signing
 - Tap the sides of a page to turn, or the center to toggle controls. Pinch or double-tap to zoom. The reader includes manga direction, bookmarks, page jumps, brightness and optional volume-key navigation.
 - Choose list or cover view, light/dark/OLED themes, and whether startup opens your library, connections or the last unfinished comic.
 - English and Spanish follow the device language. Choose **Settings → App language** to override it; Android 13+ also exposes the app language in system settings.
-- MEGA covers load for visible comics and stay cached. If MEGA has no thumbnail, generating a cover downloads the comic once and discards the temporary file. This uses transfer quota. Default: Wi-Fi/unmetered networks; change it under **Settings → Downloads and covers → MEGA covers**.
+- Opening the app starts background cover preparation, including subfolders of the saved MEGA library. It continues while reading or outside the library screen; visible covers update as they arrive. Android may defer or pause it for network, battery or scheduling limits. If MEGA has no thumbnail, generating a cover downloads the comic once and discards the temporary file. This uses transfer quota. Default: Wi-Fi/unmetered networks; change it under **Settings → Downloads and covers → MEGA covers**.
 - Direct cloud comic downloads also default to Wi-Fi/unmetered networks. Enable mobile data under **Downloads and covers** if wanted. A download stops if its connection becomes disallowed.
 
 After upgrading from a version that hid CBR files, use **Settings → Refresh library** to retrieve the folder listing again.

@@ -109,6 +109,12 @@ public final class SmokeInstrumentation extends Instrumentation {
             pass("Each foreground open checks releases even after a recent check");
             testLanguages(context);
             pass("English/Spanish switching, reader localization and preserved library state");
+            testCoverJobStartup(context);
+            pass(
+                    "Launch cover job, expedited/quota compatibility, constraints and offscreen cache preparation");
+            testApplicationCoverStore(context);
+            pass(
+                    "Cover generation survives Activity destruction and coalesces concurrent requests");
             results.putString("stream", "PASS: " + passed + " Android checks\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
@@ -1070,7 +1076,7 @@ public final class SmokeInstrumentation extends Instrumentation {
                 "Opting into mobile data must not bypass validated connectivity");
         Activity activity = launchMain(context);
         AtomicInteger downloads = new AtomicInteger();
-        CoverCache.RemoteLoader loader =
+        CoverStore.RemoteLoader loader =
                 (account, node) -> {
                     downloads.incrementAndGet();
                     try (PageSource source =
@@ -1140,7 +1146,7 @@ public final class SmokeInstrumentation extends Instrumentation {
                     .putString("covers", "off")
                     .commit();
             check(
-                    !CoverCache.remoteAllowed(context),
+                    !CoverStore.remoteAllowed(context),
                     "Downloaded-only policy must prevent network covers");
             context.getSharedPreferences("appearance", 0).edit().remove("covers").commit();
             File budget = new File(context.getCacheDir(), "cover-budget-test");
@@ -1153,7 +1159,7 @@ public final class SmokeInstrumentation extends Instrumentation {
                     }
                     check(file.setLastModified(10000 + i * 1000), "Set deterministic cache age");
                 }
-                CoverCache.trim(budget);
+                CoverStore.trim(budget);
                 check(
                         !new File(budget, "0.jpg").exists() && budget.list().length == 3,
                         "Disk cache must evict the oldest cover above 32 MiB");
@@ -1209,6 +1215,9 @@ public final class SmokeInstrumentation extends Instrumentation {
     }
 
     private void testLanguages(Context context) throws Exception {
+        SharedPreferences appearance = context.getSharedPreferences("appearance", 0);
+        String startup = appearance.getString("startup", "library");
+        appearance.edit().putString("startup", "library").commit();
         Progress before = Library.get(context).state(imported.id());
         Activity activity = launchMain(context);
         check(
@@ -1246,6 +1255,16 @@ public final class SmokeInstrumentation extends Instrumentation {
         waitForDescription(reader, "Página ");
         runOnMainSync(reader::finish);
         waitForIdleSync();
+        boolean[] resumed = {false};
+        for (int i = 0; i < 150 && !resumed[0]; i++) {
+            runOnMainSync(
+                    () ->
+                            resumed[0] =
+                                    reader.isDestroyed()
+                                            && spanish.getWindow().getDecorView().hasWindowFocus());
+            if (!resumed[0]) Thread.sleep(20);
+        }
+        check(resumed[0], "Return to the Spanish library before opening its language settings");
         clickAccessible("Ajustes");
         clickAccessible("Idioma de la app");
         monitor = addMonitor(MainActivity.class.getName(), null, false);
@@ -1262,6 +1281,167 @@ public final class SmokeInstrumentation extends Instrumentation {
                         && Library.get(context).books().size() == 3,
                 "Changing language must preserve comics and progress");
         runOnMainSync(english::finish);
+        appearance.edit().putString("startup", startup).commit();
+    }
+
+    private void testCoverJobStartup(Context context) throws Exception {
+        CoverJob.pause(context);
+        SharedPreferences appearance = context.getSharedPreferences("appearance", 0);
+        String mode = appearance.getString("covers", "wifi");
+        try {
+            appearance.edit().putString("covers", "wifi").commit();
+            android.app.job.JobInfo regular = CoverJob.plan(context, false);
+            check(
+                    !regular.isPeriodic()
+                            && regular.getMinLatencyMillis() == 0
+                            && regular.isRequireBatteryNotLow()
+                            && regular.isRequireStorageNotLow()
+                            && regular.getNetworkType()
+                                    == android.app.job.JobInfo.NETWORK_TYPE_UNMETERED,
+                    "Launch prefetch must be one-shot, immediate and constrained");
+            android.os.Parcel parcel = android.os.Parcel.obtain();
+            try {
+                regular.writeToParcel(parcel, 0);
+                parcel.setDataPosition(0);
+                check(
+                        CoverJob.sameLibrary(
+                                regular, android.app.job.JobInfo.CREATOR.createFromParcel(parcel)),
+                        "Persisted job identity must compare values rather than bundle formatting");
+            } finally {
+                parcel.recycle();
+            }
+            appearance.edit().putString("covers", "any").commit();
+            check(
+                    CoverJob.plan(context, false).getNetworkType()
+                            == android.app.job.JobInfo.NETWORK_TYPE_ANY,
+                    "Prefetch must honor the mobile cover opt-in");
+            check(
+                    !CoverJob.sameLibrary(regular, CoverJob.plan(context, false)),
+                    "A changed policy must replace the old job");
+            appearance.edit().putString("covers", "off").commit();
+            check(
+                    CoverJob.plan(context, false).getNetworkType()
+                            == android.app.job.JobInfo.NETWORK_TYPE_NONE,
+                    "Downloaded-only covers must schedule no network requirement");
+            appearance.edit().putString("covers", "wifi").commit();
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                android.app.job.JobInfo urgent = CoverJob.plan(context, true);
+                check(
+                        urgent.isExpedited() && !urgent.isRequireBatteryNotLow(),
+                        "Expedited jobs use supported constraints; battery is checked by the worker");
+                AtomicInteger attempts = new AtomicInteger();
+                check(
+                        CoverJob.submit(
+                                        urgent,
+                                        regular,
+                                        info -> {
+                                            int attempt = attempts.incrementAndGet();
+                                            check(
+                                                    info.isExpedited() == (attempt == 1),
+                                                    "Rejected expedited work must become a regular job");
+                                            return attempt == 1
+                                                    ? android.app.job.JobScheduler.RESULT_FAILURE
+                                                    : android.app.job.JobScheduler.RESULT_SUCCESS;
+                                        })
+                                && attempts.get() == 2,
+                        "Quota rejection must retain constrained cover work");
+            }
+        } finally {
+            appearance.edit().putString("covers", mode).commit();
+            CoverJob.resume(context);
+        }
+        context.getSystemService(android.app.job.JobScheduler.class).cancel(CoverJob.ID);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
+            zip.putNextEntry(new ZipEntry("startup-offscreen.png"));
+            zip.write(png(Color.RED));
+            zip.closeEntry();
+        }
+        Library.Book hidden =
+                Importer.fromStream(
+                        context,
+                        "Startup background cover.cbz",
+                        new ByteArrayInputStream(bytes.toByteArray()));
+        CoverStore store = CoverStore.get(context);
+        String startup = appearance.getString("startup", "library");
+        Activity activity = null;
+        try {
+            check(!store.contains(hidden.id()), "The new fixture must have no cover before launch");
+            appearance.edit().putString("startup", "home").commit();
+            activity = launchMain(context);
+            Activity home = activity;
+            boolean[] noShelf = {false};
+            runOnMainSync(() -> noShelf[0] = findShelf(home.getWindow().getDecorView()) == null);
+            check(noShelf[0], "The startup screen must have no visible comic cells");
+            for (int i = 0; i < 500 && !store.contains(hidden.id()); i++) Thread.sleep(20);
+            check(
+                    store.contains(hidden.id()),
+                    "Opening the app must generate an offscreen cover through its JobService");
+            runOnMainSync(home::finish);
+            for (int i = 0; i < 250 && CoverJob.running(); i++) Thread.sleep(20);
+            long age = new File(store.directory, hidden.id() + ".jpg").lastModified();
+            check(
+                    !CoverJob.prepare(context, store),
+                    "A complete cached batch should need no retry");
+            check(
+                    new File(store.directory, hidden.id() + ".jpg").lastModified() == age,
+                    "Repeated background batches must leave valid covers untouched");
+        } finally {
+            if (activity != null && !activity.isDestroyed()) runOnMainSync(activity::finish);
+            appearance.edit().putString("startup", startup).commit();
+            Library.get(context).remove(hidden);
+        }
+    }
+
+    private void testApplicationCoverStore(Context context) throws Exception {
+        SharedPreferences appearance = context.getSharedPreferences("appearance", 0);
+        String startup = appearance.getString("startup", "library");
+        appearance.edit().putString("startup", "home").commit();
+        Activity activity = launchMain(context);
+        CountDownLatch started = new CountDownLatch(1), release = new CountDownLatch(1);
+        AtomicInteger downloads = new AtomicInteger();
+        CoverStore store =
+                new CoverStore(
+                        activity,
+                        (account, node) -> {
+                            downloads.incrementAndGet();
+                            started.countDown();
+                            check(
+                                    release.await(5, TimeUnit.SECONDS),
+                                    "Release the background cover fixture");
+                            Bitmap bitmap = Bitmap.createBitmap(120, 180, Bitmap.Config.ARGB_8888);
+                            bitmap.eraseColor(Color.RED);
+                            return bitmap;
+                        });
+        MegaClient.Node node = new MegaClient.Node(886101, "Background.cbz", false, 10);
+        String key = CoverStore.key("background-fixture", node);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<Bitmap> first =
+                    pool.submit(() -> store.load(key, null, "background-fixture", node));
+            check(
+                    started.await(3, TimeUnit.SECONDS),
+                    "Application cover work must start without a view");
+            Future<Bitmap> duplicate =
+                    pool.submit(() -> store.load(key, null, "background-fixture", node));
+            runOnMainSync(activity::finish);
+            waitForIdleSync();
+            for (int i = 0; i < 150 && !activity.isDestroyed(); i++) Thread.sleep(20);
+            check(
+                    activity.isDestroyed(),
+                    "The originating Activity must be destroyed before the cover finishes");
+            release.countDown();
+            check(
+                    first.get(5, TimeUnit.SECONDS) == duplicate.get(5, TimeUnit.SECONDS)
+                            && downloads.get() == 1
+                            && store.contains(key),
+                    "Activity-independent requests must share one download and persistent result");
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+            if (!activity.isDestroyed()) runOnMainSync(activity::finish);
+            appearance.edit().putString("startup", startup).commit();
+        }
     }
 
     private void testUpdates(Context context) throws Exception {

@@ -7,7 +7,7 @@ Use JDK 21 and the prepared official MEGA SDK. See [building](building.md) for p
 | Suite | Coverage |
 | --- | --- |
 | JVM tests | 36 tests covering file identity, progress validation/conflicts, Drive requests, WebDAV parsing and bounds, transfer files, release metadata and RAR decoding |
-| Android smoke runner | 15 groups covering library/reader behavior, first cloud download without a prior local import, MEGA metadata, filters/themes, cloud JSON, updater verification, cover caching/cancellation/budget, repeated startup checks and bilingual UI |
+| Android smoke runner | 17 groups covering library/reader behavior, first cloud download without a prior local import, MEGA metadata, filters/themes, cloud JSON, updater verification, cover caching/cancellation/budget, repeated startup checks and bilingual UI |
 | Optional native checks | MEGA JNI loading, writable SDK cache and bounded remote callback behavior without real account credentials |
 | Android lint | Run on the debug variant; warnings are reviewed rather than suppressed globally |
 | Formatting | Pinned, checksum-verified google-java-format in AOSP mode |
@@ -33,9 +33,11 @@ Add `-e mega true -e network true` before the component to enable native checks 
 
 The reader bounds archive size, page count, entry size, dictionary size and total unpacked size. Tests cover natural ordering, repeated page access, unsupported/encrypted archives and malformed input. Solid RAR extraction validates predecessor pages rather than silently skipping decompression errors.
 
+The additional background tests verify the actual startup JobService creates a cover while the app displays connections with no comic cells, existing covers are skipped, parcelled job identity is stable, and expedited quota rejection uses constrained regular scheduling. A controlled generation completes after its originating Activity is destroyed; concurrent requests reuse a single result. Network and battery constraints, cache budgets and foreground cancellation remain covered. Actual cloud-account background transfers and physical-device scheduling remain unverified.
+
 ## Known verification limits
 
-The 0.6.0 test suite has 36 JVM tests and 15 Android groups. The new first-download regression starts by moving a private-cache CBZ into a library that no local import has initialized. Cover tests use the actual decoder, persistent thumbnail cache and a simulated remote loader; they verify reuse, interruption and disk eviction. Network tests cover validated/unmetered/metered policy, and UI checks persist the mobile-download switch. Update checks use intercepted HTTP to prove that a recent attempt does not suppress the next foreground open. Language tests switch the actual activity to Spanish, open its localized reader and restore English while checking retained data.
+The 0.6.1 test suite has 36 JVM tests and 17 Android groups. The new first-download regression starts by moving a private-cache CBZ into a library that no local import has initialized. Cover tests use the actual decoder, persistent thumbnail cache and a simulated remote loader; they verify reuse, interruption and disk eviction. Network tests cover validated/unmetered/metered policy, and UI checks persist the mobile-download switch. Update checks use intercepted HTTP to prove that a recent attempt does not suppress the next foreground open. Language tests switch the actual activity to Spanish, open its localized reader and restore English while checking retained data.
 
 Native MEGA checks verify JNI loading, private cache access and a real authentication-error callback for a reserved nonexistent account. They do not verify successful account login, thumbnail retrieval or comic transfer. Those account operations require user testing. ARM64 emulator results use native translation and do not establish physical-device performance.
 
