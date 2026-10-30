@@ -6,7 +6,7 @@ A native Android reader for **CBZ, ZIP, CBR, RAR and PDF**, with offline reading
 
 ## Install
 
-Use the **ARM64** APK for the OnePlus Pad 2 and other ARM64 devices. Releases also include x86_64 and universal APKs, plus `SHA256SUMS`.
+Use the **ARM64** APK for ARM64 devices. Releases also include x86_64 and universal APKs, plus `SHA256SUMS`.
 
 Install over your existing version to keep your library, accounts and progress. Do not uninstall first. The app checks GitHub Releases whenever it opens in the foreground; use **Settings → App updates → Check now** to retry immediately. Android asks you to confirm installation.
 
