@@ -106,6 +106,7 @@ final class Ui {
         TextView view = new TextView(activity);
         view.setText(value);
         view.setTextSize(size);
+        view.setIncludeFontPadding(false);
         view.setTextColor(foreground(activity));
         int pad = dp(activity, 8);
         view.setPadding(pad, pad, pad, pad);
@@ -116,7 +117,10 @@ final class Ui {
         Button button = new Button(activity);
         button.setText(value);
         button.setAllCaps(false);
+        button.setGravity(Gravity.CENTER);
+        button.setIncludeFontPadding(false);
         button.setMinHeight(dp(activity, 48));
+        button.setMinimumHeight(dp(activity, 48));
         button.setOnClickListener(view -> action.run());
         return button;
     }
@@ -131,18 +135,19 @@ final class Ui {
         return input;
     }
 
-    static Button icon(Activity activity, int drawable, String description, Runnable action) {
-        Button button = button(activity, "", action);
+    static ImageButton icon(Activity activity, int drawable, String description, Runnable action) {
+        ImageButton button = new ImageButton(activity, null, 0);
         button.setContentDescription(description);
         button.setTooltipText(description);
-        button.setPadding(dp(activity, 12), dp(activity, 12), dp(activity, 12), dp(activity, 12));
-        android.graphics.drawable.Drawable symbol = activity.getDrawable(drawable).mutate();
-        symbol.setTint(foreground(activity));
-        symbol.setBounds(0, 0, dp(activity, 24), dp(activity, 24));
-        button.setCompoundDrawables(symbol, null, null, null);
-        button.setBackgroundResource(android.R.drawable.list_selector_background);
+        button.setImageResource(drawable);
+        button.setImageTintList(android.content.res.ColorStateList.valueOf(foreground(activity)));
+        button.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        button.setPadding(dp(activity, 10), dp(activity, 10), dp(activity, 10), dp(activity, 10));
+        button.setBackgroundTintList(null);
+        button.setBackground(selectable(activity, Color.TRANSPARENT, 24));
         button.setMinimumWidth(dp(activity, 48));
-        button.setMinWidth(0);
+        button.setMinimumHeight(dp(activity, 48));
+        button.setOnClickListener(view -> action.run());
         return button;
     }
 
@@ -170,8 +175,9 @@ final class Ui {
             Runnable action) {
         LinearLayout item = new LinearLayout(activity);
         item.setOrientation(LinearLayout.VERTICAL);
-        item.setGravity(Gravity.CENTER);
-        item.setMinimumHeight(dp(activity, 64));
+        item.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        item.setPadding(0, dp(activity, black ? 0 : 4), 0, 0);
+        item.setMinimumHeight(dp(activity, black ? 80 : 64));
         item.setMinimumWidth(dp(activity, 48));
         int color =
                 selected
@@ -181,11 +187,16 @@ final class Ui {
         symbol.setImageResource(icon);
         symbol.setColorFilter(color);
         symbol.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        item.addView(symbol, new LinearLayout.LayoutParams(dp(activity, 24), dp(activity, 24)));
+        symbol.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        item.addView(
+                symbol,
+                new LinearLayout.LayoutParams(dp(activity, 28), dp(activity, black ? 56 : 40)));
         TextView title = text(activity, label, 12);
-        title.setPadding(0, dp(activity, 4), 0, 0);
+        title.setPadding(dp(activity, 2), 0, dp(activity, 2), 0);
+        title.setGravity(Gravity.CENTER);
         title.setTextColor(color);
-        title.setMaxLines(1);
+        title.setMaxLines(2);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         item.addView(title);
         item.setContentDescription(label);

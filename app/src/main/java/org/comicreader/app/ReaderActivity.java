@@ -33,7 +33,7 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
     private LinearLayout top, bottom, positionBar, readerTools;
     private TextView label, title, headerPosition;
     private SeekBar seek;
-    private Button bookmark;
+    private ImageButton bookmark;
     private Library.Book book;
     private Progress state;
     private PageSource source;
@@ -99,6 +99,9 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
         top.addView(
                 readerIcon(R.drawable.icon_settings, R.string.settings_title, this::menu),
                 new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 56)));
+        top.addView(
+                readerIcon(R.drawable.icon_more, R.string.reader_more, this::menu),
+                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 56)));
         root.addView(top, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
         bottom = Ui.column(this);
         bottom.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 4));
@@ -115,7 +118,8 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
         bottom.addView(positionBar);
         readerTools = new LinearLayout(this);
         readerTools.setGravity(Gravity.CENTER_VERTICAL);
-        bottom.addView(readerTools, new LinearLayout.LayoutParams(-1, Ui.dp(this, 68)));
+        readerTools.setMinimumHeight(Ui.dp(this, 80));
+        bottom.addView(readerTools, new LinearLayout.LayoutParams(-1, -2));
         buildReaderTools();
         seek.setOnSeekBarChangeListener(
                 new SeekBar.OnSeekBarChangeListener() {
@@ -233,9 +237,10 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                 });
     }
 
-    private Button readerIcon(int icon, int label, Runnable action) {
-        Button button = Ui.icon(this, icon, getString(label), action);
-        button.getCompoundDrawables()[0].setTint(android.graphics.Color.WHITE);
+    private ImageButton readerIcon(int icon, int label, Runnable action) {
+        ImageButton button = Ui.icon(this, icon, getString(label), action);
+        button.setImageTintList(
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE));
         return button;
     }
 
@@ -247,29 +252,52 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                 settings().getBoolean("manga", false),
                 () -> toggleSetting("manga"));
         readerTool(
-                R.drawable.icon_search,
+                R.drawable.icon_zoom,
                 R.string.reader_zoom,
                 settings().getBoolean("width", false),
                 () -> toggleSetting("width"));
-        readerTool(R.drawable.icon_previous, R.string.action_previous, false, () -> advance(-1));
-        FrameLayout nextSlot = new FrameLayout(this);
-        Button next = readerIcon(R.drawable.icon_next, R.string.action_next, () -> advance(1));
-        android.graphics.drawable.GradientDrawable outline =
-                Ui.background(0xff0a0d10, Ui.dp(this, 28));
-        outline.setStroke(Ui.dp(this, 1), Ui.accent(this));
-        next.setBackground(
-                new android.graphics.drawable.RippleDrawable(
-                        android.content.res.ColorStateList.valueOf(0x3300b0f0), outline, null));
-        nextSlot.addView(
-                next,
-                new FrameLayout.LayoutParams(Ui.dp(this, 56), Ui.dp(this, 56), Gravity.CENTER));
-        readerTools.addView(nextSlot, new LinearLayout.LayoutParams(0, -1, 1));
+        readerPageButton(
+                R.drawable.icon_previous, R.string.action_previous, false, () -> advance(-1));
+        readerPageButton(R.drawable.icon_next, R.string.action_next, true, () -> advance(1));
         readerTool(
                 R.drawable.icon_volume,
                 R.string.reader_volume,
                 settings().getBoolean("volume", false),
                 () -> toggleSetting("volume"));
         readerTool(R.drawable.icon_more, R.string.reader_more, false, this::menu);
+    }
+
+    private void readerPageButton(int icon, int title, boolean primary, Runnable action) {
+        ImageButton button = readerIcon(icon, title, action);
+        FrameLayout slot =
+                new FrameLayout(this) {
+                    @Override
+                    protected void onMeasure(int width, int height) {
+                        int available = MeasureSpec.getSize(width);
+                        int size =
+                                Math.min(
+                                        Ui.dp(ReaderActivity.this, 56),
+                                        available > 0 ? available : Ui.dp(ReaderActivity.this, 56));
+                        FrameLayout.LayoutParams params =
+                                (FrameLayout.LayoutParams) button.getLayoutParams();
+                        params.width = params.height = size;
+                        params.topMargin = (Ui.dp(ReaderActivity.this, 56) - size) / 2;
+                        super.onMeasure(width, height);
+                    }
+                };
+        if (primary) {
+            button.setBackground(Ui.selectable(this, 0xff0a0d10, 28));
+            android.graphics.drawable.GradientDrawable shape =
+                    (android.graphics.drawable.GradientDrawable)
+                            ((android.graphics.drawable.RippleDrawable) button.getBackground())
+                                    .getDrawable(0);
+            shape.setStroke(Ui.dp(this, 1), Ui.accent(this));
+        }
+        slot.addView(
+                button,
+                new FrameLayout.LayoutParams(
+                        Ui.dp(this, 56), Ui.dp(this, 56), Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+        readerTools.addView(slot, new LinearLayout.LayoutParams(0, -1, 1));
     }
 
     private void readerTool(int icon, int title, boolean selected, Runnable action) {
@@ -470,8 +498,9 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                                 ? R.string.ui_remove_bookmark
                                 : R.string.ui_bookmark));
         bookmark.setSelected(bookmarks.contains(page));
-        bookmark.getCompoundDrawables()[0].setTint(
-                bookmarks.contains(page) ? Ui.accent(this) : android.graphics.Color.WHITE);
+        bookmark.setImageTintList(
+                android.content.res.ColorStateList.valueOf(
+                        bookmarks.contains(page) ? Ui.accent(this) : android.graphics.Color.WHITE));
     }
 
     private void toggleBookmark() {

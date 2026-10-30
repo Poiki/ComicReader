@@ -10,7 +10,7 @@ Use the **ARM64** APK for ARM64 devices. Releases also include x86_64 and univer
 
 Install over your existing version to keep your library, accounts and progress. Do not uninstall first. The app checks GitHub Releases whenever it opens in the foreground; use **Settings → App updates → Check now** to retry immediately. Android asks you to confirm installation.
 
-[Version 0.7.0](https://github.com/Poiki/ComicReader/releases/tag/v0.7.0) includes the new interface and MEGA cancellation fix. See its release notes for validation limits.
+[Version 0.7.1](https://github.com/Poiki/ComicReader/releases/tag/v0.7.1) fixes icon centering, sizing and reader-control alignment. See its release notes for validation limits.
 
 Releases currently retain the original **test signing certificate**. The signing key is private and is not included in this repository. Play Protect rejected a previous emulator installation; successful download and signature verification do not guarantee system approval. See [testing](docs/testing.md).
 

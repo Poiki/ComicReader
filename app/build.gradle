@@ -9,8 +9,8 @@ android {
         applicationId 'org.comicreader.app'
         minSdk 28
         targetSdk 36
-        versionCode 9
-        versionName '0.7.0'
+        versionCode 10
+        versionName '0.7.1'
         testInstrumentationRunner 'org.comicreader.app.SmokeInstrumentation'
     }
     compileOptions {
@@ -20,6 +20,9 @@ android {
     }
     sourceSets.androidTest.java.srcDir('src/nativeTest/java')
     sourceSets.androidTest.assets.srcDir('src/test/resources')
+    testOptions {
+        unitTests.includeAndroidResources = true
+    }
     bundle {
         language {
             enableSplit = false
@@ -48,4 +51,5 @@ dependencies {
     implementation 'com.google.android.gms:play-services-auth:22.0.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.17'
 }

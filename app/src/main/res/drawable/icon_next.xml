@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Google Material Icons (Apache-2.0), chevron_right; converted from SVG to Android vector.
-     Source commit: 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7 -->
+<!-- Lucide chevron-right, ISC/MIT; converted from upstream SVG.
+     Source commit: a630cec77eac6568b989e87e4947a8bfe45caacd; notices in assets/licenses/lucide-icons.txt. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24" android:autoMirrored="true">
-    <path android:fillColor="#111111" android:pathData="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00000000" android:strokeColor="#111111" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="m9 18 6-6-6-6" />
 </vector>

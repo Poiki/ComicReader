@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Google Material Icons (Apache-2.0), remove_red_eye; converted from SVG to Android vector.
-     Source commit: 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7 -->
+<!-- Lucide eye, ISC/MIT; converted from upstream SVG.
+     Source commit: a630cec77eac6568b989e87e4947a8bfe45caacd; notices in assets/licenses/lucide-icons.txt. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#111111" android:pathData="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+    <path android:fillColor="#00000000" android:strokeColor="#111111" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+    <path android:fillColor="#00000000" android:strokeColor="#111111" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M15 12A3 3 0 1 0 9 12A3 3 0 1 0 15 12" />
 </vector>

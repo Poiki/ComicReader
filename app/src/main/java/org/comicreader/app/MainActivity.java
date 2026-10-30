@@ -36,7 +36,7 @@ public final class MainActivity extends Activity {
     private GridView shelf;
     private BaseAdapter adapter;
     private CoverCache covers;
-    private Button add;
+    private ImageButton add;
     private boolean busy, resumed;
     private Updater updater;
     private Dialog settingsDialog;
@@ -230,7 +230,8 @@ public final class MainActivity extends Activity {
         root.addView(divider, new LinearLayout.LayoutParams(-1, Ui.dp(this, 1)));
         bottomBar = new LinearLayout(this);
         bottomBar.setGravity(Gravity.CENTER_VERTICAL);
-        root.addView(bottomBar, new LinearLayout.LayoutParams(-1, Ui.dp(this, 68)));
+        bottomBar.setMinimumHeight(Ui.dp(this, 68));
+        root.addView(bottomBar, new LinearLayout.LayoutParams(-1, -2));
         CoverJob.schedule(this, true);
         if (saved != null
                 ? saved.getBoolean("home", false)
@@ -373,9 +374,10 @@ public final class MainActivity extends Activity {
                         R.drawable.icon_plus,
                         getString(R.string.ui_add_files_or_cloud_account),
                         this::addMenu);
-        add.setPadding(Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16));
+        add.setPadding(Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10));
         add.setBackground(Ui.selectable(this, Ui.accent(this), 28));
-        add.getCompoundDrawables()[0].setTint(android.graphics.Color.WHITE);
+        add.setImageTintList(
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE));
         add.setElevation(Ui.dp(this, 4));
         FrameLayout.LayoutParams floating =
                 new FrameLayout.LayoutParams(
@@ -481,8 +483,8 @@ public final class MainActivity extends Activity {
         brand.setContentDescription(getString(R.string.ui_menu));
         brand.setOnClickListener(view -> showHome());
         header.addView(brand, new LinearLayout.LayoutParams(0, -2, 1));
-        for (Button button :
-                new Button[] {
+        for (ImageButton button :
+                new ImageButton[] {
                     Ui.icon(
                             this,
                             R.drawable.icon_search,
@@ -595,8 +597,16 @@ public final class MainActivity extends Activity {
             chip.setTextColor(
                     chip.isSelected() ? android.graphics.Color.BLACK : Ui.foreground(this));
             chip.setBackground(
-                    Ui.selectable(
-                            this, chip.isSelected() ? Ui.accent(this) : Ui.surface(this), 24));
+                    new android.graphics.drawable.InsetDrawable(
+                            Ui.selectable(
+                                    this,
+                                    chip.isSelected() ? Ui.accent(this) : Ui.surface(this),
+                                    16),
+                            0,
+                            Ui.dp(this, 8),
+                            0,
+                            Ui.dp(this, 8)));
+            chip.setPadding(Ui.dp(this, 12), 0, Ui.dp(this, 12), 0);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, Ui.dp(this, 48));
             params.setMargins(0, Ui.dp(this, 3), Ui.dp(this, 6), Ui.dp(this, 3));
             filterChips.addView(chip, params);
@@ -612,21 +622,21 @@ public final class MainActivity extends Activity {
     private void updateSources() {
         sourceCards.removeAllViews();
         sourceCard(
-                R.drawable.icon_folder,
+                R.drawable.icon_folder_filled,
                 getString(R.string.source_local),
                 R.string.source_device,
                 0xff348cf4,
                 !remoteMode || downloadsOnly || recent,
                 () -> setSource(false));
         sourceCard(
-                R.drawable.icon_cloud,
+                R.drawable.icon_cloud_filled,
                 "MEGA",
                 R.string.source_cloud,
                 0xfff04451,
                 remoteMode && !downloadsOnly && !recent,
                 () -> setSource(true));
         sourceCard(
-                R.drawable.icon_cloud,
+                R.drawable.icon_cloud_filled,
                 "Drive",
                 R.string.source_cloud,
                 0xff16b8a6,
@@ -645,7 +655,7 @@ public final class MainActivity extends Activity {
             int icon, String label, int subtitle, int color, boolean selected, Runnable action) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setGravity(Gravity.TOP);
         card.setMinimumHeight(Ui.dp(this, 84));
         card.setPadding(Ui.dp(this, 10), Ui.dp(this, 8), Ui.dp(this, 4), Ui.dp(this, 8));
         card.setBackground(Ui.selectable(this, Ui.surface(this), 10));
@@ -659,18 +669,18 @@ public final class MainActivity extends Activity {
         ImageView symbol = new ImageView(this);
         symbol.setImageResource(icon);
         symbol.setColorFilter(color);
-        card.addView(symbol, new LinearLayout.LayoutParams(Ui.dp(this, 26), Ui.dp(this, 26)));
+        card.addView(symbol, new LinearLayout.LayoutParams(Ui.dp(this, 32), Ui.dp(this, 32)));
         TextView name = Ui.text(this, label, 14);
         name.setTypeface(null, android.graphics.Typeface.BOLD);
         name.setTextColor(selected ? Ui.accentText(this) : Ui.foreground(this));
         name.setPadding(0, Ui.dp(this, 4), 0, 0);
-        name.setMaxLines(1);
+        name.setMaxLines(2);
         name.setEllipsize(TextUtils.TruncateAt.END);
         card.addView(name);
         TextView detail = Ui.text(this, getString(subtitle), 12);
         detail.setTextColor(Ui.secondary(this));
         detail.setPadding(0, Ui.dp(this, 2), 0, 0);
-        detail.setMaxLines(1);
+        detail.setMaxLines(2);
         detail.setEllipsize(TextUtils.TruncateAt.END);
         card.addView(detail);
         card.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
@@ -683,7 +693,7 @@ public final class MainActivity extends Activity {
                 view -> {
                     if (!busy) action.run();
                 });
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1);
         params.setMarginEnd(Ui.dp(this, sourceCards.getChildCount() == 3 ? 0 : 8));
         sourceCards.addView(card, params);
     }
@@ -751,8 +761,10 @@ public final class MainActivity extends Activity {
     private final class BookTile extends LinearLayout {
         final CoverCache.CoverView cover;
         final TextView title, detail;
-        final Button options;
+        final ImageButton options;
         private final boolean gridMode;
+        private final android.graphics.Rect overflowBounds = new android.graphics.Rect(),
+                targetBounds = new android.graphics.Rect();
 
         BookTile(boolean gridMode) {
             super(MainActivity.this);
@@ -772,8 +784,7 @@ public final class MainActivity extends Activity {
                     new LinearLayout.LayoutParams(
                             gridMode ? -1 : Ui.dp(MainActivity.this, 52),
                             Ui.dp(MainActivity.this, gridMode ? 128 : 72)));
-            LinearLayout information = new LinearLayout(MainActivity.this);
-            information.setGravity(Gravity.CENTER_VERTICAL);
+            FrameLayout information = new FrameLayout(MainActivity.this);
             LinearLayout labels = new LinearLayout(MainActivity.this);
             labels.setOrientation(VERTICAL);
             labels.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
@@ -791,16 +802,47 @@ public final class MainActivity extends Activity {
                     Ui.dp(MainActivity.this, gridMode ? 0 : 12), Ui.dp(MainActivity.this, 2), 0, 0);
             labels.addView(title);
             labels.addView(detail);
-            information.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+            labels.setPadding(0, 0, Ui.dp(MainActivity.this, 32), 0);
+            information.addView(labels, new FrameLayout.LayoutParams(-1, -2));
             options = Ui.icon(MainActivity.this, R.drawable.icon_more, "", () -> {});
             options.setFocusable(false);
+            options.setMinimumWidth(0);
+            options.setMinimumHeight(0);
+            options.setPadding(
+                    Ui.dp(MainActivity.this, 4),
+                    Ui.dp(MainActivity.this, 4),
+                    Ui.dp(MainActivity.this, 4),
+                    Ui.dp(MainActivity.this, 4));
             information.addView(
                     options,
-                    new LinearLayout.LayoutParams(
-                            Ui.dp(MainActivity.this, 48), Ui.dp(MainActivity.this, 48)));
+                    new FrameLayout.LayoutParams(
+                            Ui.dp(MainActivity.this, 28),
+                            Ui.dp(MainActivity.this, 28),
+                            Gravity.TOP | Gravity.END));
             addView(
                     information,
                     new LinearLayout.LayoutParams(gridMode ? -1 : 0, -2, gridMode ? 0 : 1));
+        }
+
+        @Override
+        @android.annotation.SuppressLint(
+                "DrawAllocation") // Rebuild only when the touch bounds change.
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            super.onLayout(changed, left, top, right, bottom);
+            if (options.getVisibility() != View.VISIBLE) {
+                setTouchDelegate(null);
+                return;
+            }
+            targetBounds.set(0, 0, options.getWidth(), options.getHeight());
+            offsetDescendantRectToMyCoords(options, targetBounds);
+            int size = Ui.dp(MainActivity.this, 48);
+            int x = Math.max(0, Math.min(getWidth() - size, targetBounds.centerX() - size / 2));
+            int y = Math.max(0, Math.min(getHeight() - size, targetBounds.centerY() - size / 2));
+            targetBounds.set(x, y, x + size, y + size);
+            if (getTouchDelegate() == null || !overflowBounds.equals(targetBounds)) {
+                overflowBounds.set(targetBounds);
+                setTouchDelegate(new TouchDelegate(overflowBounds, options));
+            }
         }
 
         @Override
@@ -1261,7 +1303,7 @@ public final class MainActivity extends Activity {
         settingsRow(
                 group,
                 dialog,
-                R.drawable.icon_palette,
+                R.drawable.icon_theme,
                 R.string.ui_theme,
                 getString(
                         switch (Ui.theme(this)) {
@@ -1273,7 +1315,7 @@ public final class MainActivity extends Activity {
         settingsRow(
                 group,
                 dialog,
-                R.drawable.icon_palette,
+                R.drawable.icon_search,
                 R.string.accent_color,
                 getString(
                         switch (appearance.getString("accent", "blue")) {
@@ -1304,7 +1346,7 @@ public final class MainActivity extends Activity {
         settingsRow(
                 group,
                 dialog,
-                R.drawable.icon_direction,
+                R.drawable.icon_reading_direction,
                 R.string.reading_direction,
                 getString(
                         reader.getBoolean("manga", false)
@@ -1319,7 +1361,7 @@ public final class MainActivity extends Activity {
         settingsRow(
                 group,
                 dialog,
-                R.drawable.icon_search,
+                R.drawable.icon_zoom,
                 R.string.reading_zoom,
                 getString(
                         reader.getBoolean("width", false)
@@ -1345,7 +1387,7 @@ public final class MainActivity extends Activity {
                 checked -> reader.edit().putBoolean("progress", checked).apply());
         settingsToggle(
                 group,
-                R.drawable.icon_power,
+                R.drawable.icon_watch,
                 R.string.reading_keep_screen,
                 reader.getBoolean("keep_screen", false),
                 checked -> reader.edit().putBoolean("keep_screen", checked).apply());
@@ -1356,7 +1398,7 @@ public final class MainActivity extends Activity {
         settingsRow(
                 group,
                 dialog,
-                R.drawable.icon_power,
+                R.drawable.icon_startup,
                 R.string.ui_startup_screen,
                 getString(
                         switch (appearance.getString("startup", "library")) {
@@ -1385,7 +1427,7 @@ public final class MainActivity extends Activity {
         settingsRow(
                 group,
                 dialog,
-                R.drawable.icon_grid,
+                R.drawable.icon_package,
                 R.string.remote_covers,
                 getString(
                         switch (appearance.getString("covers", "wifi")) {
@@ -1412,7 +1454,9 @@ public final class MainActivity extends Activity {
                     else refresh();
                 });
 
-        group = settingsSection(body, R.string.settings_cloud_progress, R.drawable.icon_cloud);
+        group =
+                settingsSection(
+                        body, R.string.settings_cloud_progress, R.drawable.icon_cloud_filled);
         settingsToggle(
                 group,
                 R.drawable.icon_sync,
@@ -1480,7 +1524,9 @@ public final class MainActivity extends Activity {
                                         .addCategory(Intent.CATEGORY_OPENABLE),
                                 RESTORE));
 
-        group = settingsSection(body, R.string.settings_application, R.drawable.icon_settings);
+        group =
+                settingsSection(
+                        body, R.string.settings_application, R.drawable.icon_settings_filled);
         settingsToggle(
                 group,
                 R.drawable.icon_sync,
@@ -1623,7 +1669,8 @@ public final class MainActivity extends Activity {
         row.setMinimumHeight(Ui.dp(this, 48));
         ImageView symbol = new ImageView(this);
         symbol.setImageResource(icon);
-        symbol.setColorFilter(Ui.secondary(this));
+        symbol.setColorFilter(
+                title == R.string.accent_color ? Ui.accentText(this) : Ui.secondary(this));
         row.addView(symbol, new LinearLayout.LayoutParams(Ui.dp(this, 20), Ui.dp(this, 20)));
         TextView label = Ui.text(this, getString(title), 14);
         label.setPadding(Ui.dp(this, 12), Ui.dp(this, 8), Ui.dp(this, 6), Ui.dp(this, 8));
@@ -1639,7 +1686,8 @@ public final class MainActivity extends Activity {
             row.addView(value);
         }
         ImageView arrow = new ImageView(this);
-        arrow.setImageResource(R.drawable.icon_next);
+        arrow.setImageResource(
+                title == R.string.ui_theme ? R.drawable.icon_expand : R.drawable.icon_next);
         arrow.setColorFilter(Ui.secondary(this));
         row.addView(arrow, new LinearLayout.LayoutParams(Ui.dp(this, 16), Ui.dp(this, 16)));
         for (int i = 0; i < row.getChildCount(); i++)
@@ -1666,10 +1714,30 @@ public final class MainActivity extends Activity {
         Switch toggle = new Switch(this);
         toggle.setText(title);
         toggle.setTextSize(14);
+        toggle.setGravity(Gravity.CENTER_VERTICAL);
+        toggle.setIncludeFontPadding(false);
         toggle.setTextColor(Ui.foreground(this));
         toggle.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 12), 0);
         toggle.setMinimumHeight(Ui.dp(this, 48));
         toggle.setSwitchPadding(Ui.dp(this, 8));
+        android.graphics.drawable.GradientDrawable thumb =
+                Ui.background(android.graphics.Color.WHITE, Ui.dp(this, 10));
+        thumb.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        thumb.setSize(Ui.dp(this, 20), Ui.dp(this, 20));
+        android.graphics.drawable.GradientDrawable track =
+                Ui.background(android.graphics.Color.WHITE, Ui.dp(this, 10));
+        track.setSize(Ui.dp(this, 40), Ui.dp(this, 20));
+        toggle.setThumbDrawable(thumb);
+        toggle.setTrackDrawable(track);
+        toggle.setSwitchMinWidth(Ui.dp(this, 40));
+        toggle.setShowText(false);
+        toggle.setSplitTrack(false);
+        toggle.setThumbTintList(
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE));
+        toggle.setTrackTintList(
+                new android.content.res.ColorStateList(
+                        new int[][] {new int[] {android.R.attr.state_checked}, new int[0]},
+                        new int[] {Ui.accent(this), Ui.dark(this) ? 0xff454b50 : 0xffadb6bf}));
         android.graphics.drawable.Drawable symbol = getDrawable(icon).mutate();
         symbol.setTint(Ui.secondary(this));
         symbol.setBounds(0, 0, Ui.dp(this, 20), Ui.dp(this, 20));

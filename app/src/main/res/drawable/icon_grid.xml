@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Google Material Icons (Apache-2.0), view_module; converted from SVG to Android vector.
-     Source commit: 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7 -->
+<!-- Lucide panels-top-left, ISC/MIT; converted from upstream SVG.
+     Source commit: a630cec77eac6568b989e87e4947a8bfe45caacd; notices in assets/licenses/lucide-icons.txt. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#111111" android:pathData="M14.67,5v6.5H9.33V5H14.67z M15.67,11.5H21V5h-5.33V11.5z M14.67,19v-6.5H9.33V19H14.67z M15.67,12.5V19H21v-6.5H15.67z M8.33,12.5H3V19h5.33V12.5z M8.33,11.5V5H3v6.5H8.33z" />
+    <path android:fillColor="#00000000" android:strokeColor="#111111" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5 3H19Q21 3 21 5V19Q21 21 19 21H5Q3 21 3 19V5Q3 3 5 3Z" />
+    <path android:fillColor="#00000000" android:strokeColor="#111111" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3 9h18" />
+    <path android:fillColor="#00000000" android:strokeColor="#111111" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9 21V9" />
 </vector>
