@@ -7,10 +7,28 @@ import android.view.*;
 import android.widget.*;
 
 final class Ui {
-    static final int ACCENT = Color.rgb(255, 144, 0);
+    static final int ACCENT = 0xff00b0f0;
+
+    static int accent(Activity activity) {
+        return switch (activity.getSharedPreferences("appearance", 0).getString("accent", "blue")) {
+            case "orange" -> 0xffff9000;
+            case "teal" -> 0xff16b8a6;
+            default -> ACCENT;
+        };
+    }
+
+    static int accentText(Activity activity) {
+        int color = accent(activity);
+        return dark(activity)
+                ? color
+                : Color.rgb(
+                        Color.red(color) * 2 / 3,
+                        Color.green(color) * 2 / 3,
+                        Color.blue(color) * 2 / 3);
+    }
 
     static String theme(Activity activity) {
-        return activity.getSharedPreferences("appearance", 0).getString("theme", "light");
+        return activity.getSharedPreferences("appearance", 0).getString("theme", "oled");
     }
 
     static boolean dark(Activity activity) {
@@ -33,16 +51,12 @@ final class Ui {
 
     static int surface(Activity activity) {
         return dark(activity)
-                ? theme(activity).equals("oled") ? Color.BLACK : 0xff242424
-                : 0xffeeeeee;
+                ? theme(activity).equals("oled") ? 0xff0d1012 : 0xff202428
+                : 0xfff0f3f6;
     }
 
     static int header(Activity activity) {
-        return dark(activity) ? surface(activity) : 0xff424242;
-    }
-
-    static int controls(Activity activity) {
-        return dark(activity) ? surface(activity) : 0xfffffbef;
+        return background(activity);
     }
 
     static void applyTheme(Activity activity) {
@@ -52,6 +66,15 @@ final class Ui {
                     case "oled" -> R.style.AppThemeOled;
                     default -> R.style.AppTheme;
                 });
+        activity.getTheme()
+                .applyStyle(
+                        switch (activity.getSharedPreferences("appearance", 0)
+                                .getString("accent", "blue")) {
+                            case "orange" -> R.style.AccentOrange;
+                            case "teal" -> R.style.AccentTeal;
+                            default -> R.style.AccentBlue;
+                        },
+                        true);
     }
 
     static void bars(Activity activity) {
@@ -130,6 +153,50 @@ final class Ui {
         return background;
     }
 
+    static android.graphics.drawable.Drawable selectable(Activity activity, int color, int radius) {
+        return new android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(
+                        (accent(activity) & 0x00ffffff) | 0x33000000),
+                background(color, dp(activity, radius)),
+                background(Color.WHITE, dp(activity, radius)));
+    }
+
+    static LinearLayout destination(
+            Activity activity,
+            int icon,
+            String label,
+            boolean selected,
+            boolean black,
+            Runnable action) {
+        LinearLayout item = new LinearLayout(activity);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setMinimumHeight(dp(activity, 64));
+        item.setMinimumWidth(dp(activity, 48));
+        int color =
+                selected
+                        ? black ? accent(activity) : accentText(activity)
+                        : black ? 0xffdddddd : secondary(activity);
+        ImageView symbol = new ImageView(activity);
+        symbol.setImageResource(icon);
+        symbol.setColorFilter(color);
+        symbol.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        item.addView(symbol, new LinearLayout.LayoutParams(dp(activity, 24), dp(activity, 24)));
+        TextView title = text(activity, label, 12);
+        title.setPadding(0, dp(activity, 4), 0, 0);
+        title.setTextColor(color);
+        title.setMaxLines(1);
+        title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        item.addView(title);
+        item.setContentDescription(label);
+        item.setSelected(selected);
+        item.setFocusable(true);
+        item.setClickable(true);
+        item.setBackground(selectable(activity, Color.TRANSPARENT, 12));
+        item.setOnClickListener(view -> action.run());
+        return item;
+    }
+
     static void insets(View root) {
         int left = root.getPaddingLeft(),
                 top = root.getPaddingTop(),
@@ -163,6 +230,8 @@ final class Ui {
                             R.string.error_mega_session;
                     case "MEGA denied access; check your credentials or permissions" ->
                             R.string.error_mega_access;
+                    case "MEGA took too long to finish the previous operation; try again" ->
+                            R.string.error_mega_busy_timeout;
                     default -> 0;
                 };
         if (!activity.isFinishing() && !activity.isDestroyed())

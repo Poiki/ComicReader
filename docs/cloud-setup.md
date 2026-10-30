@@ -67,3 +67,7 @@ Choose one sync provider in settings. Drive stores one `{device-uuid}.crp` per i
 Duplicate remote state folders/files are rejected rather than automatically deleted. MEGA account versioning may retain older snapshot versions; the app does not prune them. See [synchronization](synchronization.md) for validation, conflicts and manual export.
 
 Automated tests cover local protocol behavior and native SDK loading. Live account login, revocation and synchronization have not been verified by the test suite; Google OAuth setup remains an owner task.
+
+## Transfer cancellation
+
+Folder metadata reads can continue while MEGA finishes cancelling a cover transfer. New downloads/uploads and session teardown wait off the UI thread for the preceding terminal callback, with a 30-second limit and an explicit error if the SDK stalls. Temporary files remain owned by JNI until that callback. Interrupting a Java waiter does not claim that the native operation has finished.

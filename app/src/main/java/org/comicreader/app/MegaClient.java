@@ -68,11 +68,6 @@ final class MegaClient {
     private MegaApiJava api() throws IOException {
         worker();
         if (!available()) throw new IOException(status());
-        if (pending != null)
-            throw new IOException("MEGA is still cancelling the previous transfer");
-        if (pendingRequest != null)
-            throw new IOException(
-                    "MEGA is still processing the previous request; wait before retrying");
         if (api == null) {
             try {
                 System.loadLibrary("mega");
@@ -101,6 +96,7 @@ final class MegaClient {
                 || (otp != null && !otp.isBlank() && !otp.matches("[0-9]{6}")))
             throw new IOException("Enter an email, password and, if required, a six-digit code");
         MegaApiJava sdk = api();
+        awaitRequests();
         if (loggedIn() || sdk.isLoggedIn() != 0)
             throw new IOException("Sign out before connecting another account");
         if (otp == null || otp.isBlank()) request(listener -> sdk.login(email, password, listener));
@@ -134,6 +130,7 @@ final class MegaClient {
     private boolean connected() throws Exception {
         MegaApiJava sdk = api();
         if (ready && sdk.isLoggedIn() != 0) return false;
+        awaitRequests();
         if (sdk.isLoggedIn() == 0) {
             String session = Secrets.get(context, SESSION);
             if (session == null || session.isEmpty()) throw new IOException("Sign in to MEGA");
@@ -178,15 +175,14 @@ final class MegaClient {
         MegaNode remote = api.getNodeByHandle(node.handle);
         if (remote == null || !remote.isFile()) throw new IOException("MEGA file is unavailable");
         if (!remote.hasThumbnail()) return null;
+        awaitRequests();
         File target = File.createTempFile("mega-thumbnail-", ".jpg", context.getCacheDir());
         try {
             request(
                     listener -> api.getThumbnail(remote, target.getAbsolutePath(), listener),
                     target);
         } catch (InterruptedException error) {
-            Request finishing = pendingRequest;
             api.cancelGetThumbnail(remote);
-            if (finishing != null) finishing.done.await(5, TimeUnit.SECONDS);
             throw error;
         }
         if (target.length() == 0 || target.length() > 5 * 1024 * 1024) {
@@ -197,6 +193,7 @@ final class MegaClient {
     }
 
     private File receive(MegaNode node, long limit) throws Exception {
+        awaitTransfer();
         if (node == null || !node.isFile() || node.getSize() < 0 || node.getSize() > limit)
             throw new IOException("MEGA file is unavailable or too large");
         File target = File.createTempFile("mega-", ".part", context.getCacheDir());
@@ -219,7 +216,6 @@ final class MegaClient {
             return target;
         } catch (Exception e) {
             transfer.cancel();
-            if (e instanceof InterruptedException) transfer.done.await(5, TimeUnit.SECONDS);
             throw e;
         }
     }
@@ -270,6 +266,7 @@ final class MegaClient {
                 out.getFD().sync();
             }
             MegaNode destination = folder;
+            awaitTransfer();
             transfer = new Transfer(snapshot, Progress.MAX_BYTES, true);
             pending = transfer;
             try {
@@ -305,10 +302,9 @@ final class MegaClient {
         worker();
         Exception revocation = null;
         try {
-            if (pending != null) {
-                pending.cancel();
-                throw new IOException("MEGA transfer cancellation is still in progress");
-            }
+            if (pending != null) pending.cancel();
+            awaitTransfer();
+            awaitRequests();
             MegaApiJava sdk = api();
             if (sdk.isLoggedIn() == 0) {
                 String session = Secrets.get(context, SESSION);
@@ -334,10 +330,26 @@ final class MegaClient {
     synchronized void suspend() throws Exception {
         worker();
         if (api == null) return;
-        if (pending != null || pendingRequest != null)
-            throw new IOException("MEGA cannot disconnect while an operation is finishing");
+        awaitTransfer();
+        awaitRequests();
         if (api.isLoggedIn() != 0) request(api::localLogout);
         ready = false;
+    }
+
+    // Metadata reads can continue while JNI finishes cancelling a cover transfer.
+    private void awaitTransfer() throws IOException, InterruptedException {
+        Transfer finishing = pending;
+        if (finishing != null) awaitCompletion(finishing.done);
+    }
+
+    private void awaitRequests() throws IOException, InterruptedException {
+        Request finishing;
+        while ((finishing = pendingRequest) != null) awaitCompletion(finishing.done);
+    }
+
+    static void awaitCompletion(CountDownLatch done) throws IOException, InterruptedException {
+        if (!done.await(30, TimeUnit.SECONDS))
+            throw new IOException("MEGA took too long to finish the previous operation; try again");
     }
 
     private long request(Consumer<MegaRequestListenerInterface> start) throws Exception {
@@ -346,6 +358,7 @@ final class MegaClient {
 
     private long request(Consumer<MegaRequestListenerInterface> start, File target)
             throws Exception {
+        awaitRequests();
         Request request = new Request(target);
         pendingRequest = request;
         try {
@@ -439,8 +452,8 @@ final class MegaClient {
             finished = true;
             successfulLogin =
                     request.getType() == MegaRequest.TYPE_LOGIN && error == MegaError.API_OK;
-            if (pendingRequest == this) pendingRequest = null;
             if (abandoned && successfulLogin) disconnectLateLogin();
+            else if (pendingRequest == this) pendingRequest = null;
             done.countDown();
         }
     }
@@ -497,7 +510,7 @@ final class MegaClient {
         public void onTransferFinish(MegaApiJava api, MegaTransfer transfer, MegaError error) {
             result = error.getErrorCode();
             lifetime.complete(result == MegaError.API_OK);
-            pending = null;
+            if (pending == this) pending = null;
             done.countDown();
         }
 

@@ -30,8 +30,8 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                 }
             };
     private PageView image;
-    private LinearLayout top, bottom;
-    private TextView label, title;
+    private LinearLayout top, bottom, positionBar, readerTools;
+    private TextView label, title, headerPosition;
     private SeekBar seek;
     private Button bookmark;
     private Library.Book book;
@@ -69,57 +69,54 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                 });
         top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setBackground(Ui.background(Ui.controls(this), Ui.dp(this, 6)));
+        top.setMinimumHeight(Ui.dp(this, 56));
+        top.setBackgroundColor(android.graphics.Color.BLACK);
         top.addView(
-                Ui.icon(this, R.drawable.icon_back, getString(R.string.action_back), this::finish),
-                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+                readerIcon(R.drawable.icon_back, R.string.action_back, this::finish),
+                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 56)));
+        LinearLayout heading = new LinearLayout(this);
+        heading.setOrientation(LinearLayout.VERTICAL);
         title = Ui.text(this, getString(R.string.ui_opening), 16);
-        title.setMaxLines(2);
-        title.setGravity(Gravity.CENTER);
+        title.setMaxLines(1);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        title.setTextColor(android.graphics.Color.WHITE);
+        title.setPadding(0, 0, 0, Ui.dp(this, 2));
         title.setTypeface(null, android.graphics.Typeface.BOLD);
-        top.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        heading.addView(title);
+        headerPosition = Ui.text(this, "", 12);
+        headerPosition.setTextColor(0xffbbbbbb);
+        headerPosition.setPadding(0, 0, 0, 0);
+        heading.addView(headerPosition);
+        top.addView(heading, new LinearLayout.LayoutParams(0, -2, 1));
+        bookmark = readerIcon(R.drawable.icon_bookmark, R.string.ui_bookmark, this::toggleBookmark);
+        top.addView(bookmark, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 56)));
         top.addView(
-                Ui.icon(
-                        this,
-                        R.drawable.icon_settings,
-                        getString(R.string.settings_title),
-                        this::menu),
-                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
-        FrameLayout.LayoutParams toolbar = new FrameLayout.LayoutParams(-1, -2, Gravity.TOP);
-        toolbar.setMargins(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), 0);
-        root.addView(top, toolbar);
+                readerIcon(
+                        R.drawable.icon_brightness,
+                        R.string.ui_window_brightness,
+                        this::brightness),
+                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 56)));
+        top.addView(
+                readerIcon(R.drawable.icon_settings, R.string.settings_title, this::menu),
+                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 56)));
+        root.addView(top, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
         bottom = Ui.column(this);
-        bottom.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), 0);
-        bottom.setBackgroundColor(Ui.controls(this));
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setGravity(Gravity.CENTER_VERTICAL);
-        buttons.addView(
-                Ui.icon(
-                        this,
-                        R.drawable.icon_previous,
-                        getString(R.string.action_previous),
-                        () -> advance(-1)),
-                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
-        bookmark = Ui.button(this, getString(R.string.ui_bookmark), this::toggleBookmark);
-        bookmark.setBackgroundResource(android.R.drawable.list_selector_background);
-        buttons.addView(bookmark, new LinearLayout.LayoutParams(0, Ui.dp(this, 48), 1));
-        buttons.addView(
-                Ui.icon(
-                        this,
-                        R.drawable.icon_next,
-                        getString(R.string.action_next),
-                        () -> advance(1)),
-                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
-        bottom.addView(buttons);
-        LinearLayout position = new LinearLayout(this);
-        position.setGravity(Gravity.CENTER_VERTICAL);
+        bottom.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), Ui.dp(this, 4));
+        bottom.setBackgroundColor(android.graphics.Color.BLACK);
+        positionBar = new LinearLayout(this);
+        positionBar.setGravity(Gravity.CENTER_VERTICAL);
         seek = new SeekBar(this);
         seek.setContentDescription(getString(R.string.ui_go_to_page));
-        position.addView(seek, new LinearLayout.LayoutParams(0, Ui.dp(this, 48), 1));
-        label = Ui.text(this, "", 14);
+        positionBar.addView(seek, new LinearLayout.LayoutParams(0, Ui.dp(this, 44), 1));
+        label = Ui.text(this, "", 12);
+        label.setTextColor(android.graphics.Color.WHITE);
         label.setGravity(Gravity.CENTER);
-        position.addView(label);
-        bottom.addView(position);
+        positionBar.addView(label);
+        bottom.addView(positionBar);
+        readerTools = new LinearLayout(this);
+        readerTools.setGravity(Gravity.CENTER_VERTICAL);
+        bottom.addView(readerTools, new LinearLayout.LayoutParams(-1, Ui.dp(this, 68)));
+        buildReaderTools();
         seek.setOnSeekBarChangeListener(
                 new SeekBar.OnSeekBarChangeListener() {
                     public void onProgressChanged(SeekBar bar, int progress, boolean user) {
@@ -143,6 +140,8 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                     }
                 });
         root.addView(bottom, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+        top.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> layoutPage());
+        bottom.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> layoutPage());
         Library.IO.execute(
                 () -> {
                     try {
@@ -234,6 +233,71 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                 });
     }
 
+    private Button readerIcon(int icon, int label, Runnable action) {
+        Button button = Ui.icon(this, icon, getString(label), action);
+        button.getCompoundDrawables()[0].setTint(android.graphics.Color.WHITE);
+        return button;
+    }
+
+    private void buildReaderTools() {
+        readerTools.removeAllViews();
+        readerTool(
+                R.drawable.icon_direction,
+                R.string.reader_direction,
+                settings().getBoolean("manga", false),
+                () -> toggleSetting("manga"));
+        readerTool(
+                R.drawable.icon_search,
+                R.string.reader_zoom,
+                settings().getBoolean("width", false),
+                () -> toggleSetting("width"));
+        readerTool(R.drawable.icon_previous, R.string.action_previous, false, () -> advance(-1));
+        FrameLayout nextSlot = new FrameLayout(this);
+        Button next = readerIcon(R.drawable.icon_next, R.string.action_next, () -> advance(1));
+        android.graphics.drawable.GradientDrawable outline =
+                Ui.background(0xff0a0d10, Ui.dp(this, 28));
+        outline.setStroke(Ui.dp(this, 1), Ui.accent(this));
+        next.setBackground(
+                new android.graphics.drawable.RippleDrawable(
+                        android.content.res.ColorStateList.valueOf(0x3300b0f0), outline, null));
+        nextSlot.addView(
+                next,
+                new FrameLayout.LayoutParams(Ui.dp(this, 56), Ui.dp(this, 56), Gravity.CENTER));
+        readerTools.addView(nextSlot, new LinearLayout.LayoutParams(0, -1, 1));
+        readerTool(
+                R.drawable.icon_volume,
+                R.string.reader_volume,
+                settings().getBoolean("volume", false),
+                () -> toggleSetting("volume"));
+        readerTool(R.drawable.icon_more, R.string.reader_more, false, this::menu);
+    }
+
+    private void readerTool(int icon, int title, boolean selected, Runnable action) {
+        readerTools.addView(
+                Ui.destination(this, icon, getString(title), selected, true, action),
+                new LinearLayout.LayoutParams(0, -1, 1));
+    }
+
+    private void toggleSetting(String key) {
+        settings().edit().putBoolean(key, !settings().getBoolean(key, false)).apply();
+        buildReaderTools();
+        applySettings();
+        if (state != null) {
+            updateLabel();
+            if (key.equals("width")) request(page);
+        }
+    }
+
+    private void layoutPage() {
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) image.getLayoutParams();
+        int topHeight = controls ? top.getHeight() : 0,
+                bottomHeight = controls ? bottom.getHeight() : 0;
+        if (params.topMargin == topHeight && params.bottomMargin == bottomHeight) return;
+        params.topMargin = topHeight;
+        params.bottomMargin = bottomHeight;
+        image.setLayoutParams(params);
+    }
+
     private SharedPreferences settings() {
         return getSharedPreferences("reader", 0);
     }
@@ -278,6 +342,8 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
     }
 
     private void applySettings() {
+        positionBar.setVisibility(
+                settings().getBoolean("progress", true) ? View.VISIBLE : View.GONE);
         if (settings().getBoolean("keep_screen", false))
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -397,10 +463,15 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                         + (settings().getBoolean("manga", false)
                                 ? getString(R.string.reader_manga_indicator)
                                 : ""));
-        bookmark.setText(
-                bookmarks.contains(page)
-                        ? getString(R.string.ui_remove_bookmark)
-                        : getString(R.string.ui_bookmark));
+        headerPosition.setText(getString(R.string.reader_position, page + 1, state.pages));
+        bookmark.setContentDescription(
+                getString(
+                        bookmarks.contains(page)
+                                ? R.string.ui_remove_bookmark
+                                : R.string.ui_bookmark));
+        bookmark.setSelected(bookmarks.contains(page));
+        bookmark.getCompoundDrawables()[0].setTint(
+                bookmarks.contains(page) ? Ui.accent(this) : android.graphics.Color.WHITE);
     }
 
     private void toggleBookmark() {
@@ -454,6 +525,7 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
         controls = !controls;
         top.setVisibility(controls ? View.VISIBLE : View.GONE);
         bottom.setVisibility(controls ? View.VISIBLE : View.GONE);
+        layoutPage();
         getWindow()
                 .getDecorView()
                 .setSystemUiVisibility(
@@ -467,7 +539,7 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
     private void menu() {
         if (state == null) return;
         new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.ui_reading))
+                .setTitle(R.string.ui_reader_settings)
                 .setItems(
                         new String[] {
                             getString(R.string.ui_go_to_page),
@@ -550,6 +622,7 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                                             .putBoolean(key, !settings().getBoolean(key, false))
                                             .apply();
                                     applySettings();
+                                    buildReaderTools();
                                     request(page);
                                 }
                                 case 4 ->

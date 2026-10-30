@@ -118,6 +118,8 @@ public final class SmokeInstrumentation extends Instrumentation {
             testGroupedSettings(context);
             pass(
                     "Grouped settings headings, current summaries, scrolling and retained action routes");
+            testNavigationAndSettingsSearch(context);
+            pass("Library destinations, settings search and persistent inline reader toggles");
             results.putString("stream", "PASS: " + passed + " Android checks\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
@@ -402,7 +404,9 @@ public final class SmokeInstrumentation extends Instrumentation {
         check(loaded[0], "Visible library covers must decode");
         testCoverFailure(main);
         testLargeCovers(main);
-        runOnMainSync(() -> findText(main.getWindow().getDecorView(), "Cover view").performClick());
+        clickAccessible("Settings");
+        clickAccessible("Library view");
+        clickAccessible("Cover view");
         waitForIdleSync();
         Thread.sleep(100);
         int[] columns = {0};
@@ -423,8 +427,10 @@ public final class SmokeInstrumentation extends Instrumentation {
                     check(
                             findShelf(main.getWindow().getDecorView()).getCount() == 2,
                             "Closing search must restore all books");
-                    findText(main.getWindow().getDecorView(), "List view").performClick();
                 });
+        clickAccessible("Settings");
+        clickAccessible("Library view");
+        clickAccessible("List view");
         waitForIdleSync();
         Thread.sleep(100);
         runOnMainSync(
@@ -1468,6 +1474,67 @@ public final class SmokeInstrumentation extends Instrumentation {
             release.countDown();
             pool.shutdownNow();
             if (!activity.isDestroyed()) runOnMainSync(activity::finish);
+            appearance.edit().putString("startup", startup).commit();
+        }
+    }
+
+    private void testNavigationAndSettingsSearch(Context context) throws Exception {
+        SharedPreferences appearance = context.getSharedPreferences("appearance", 0);
+        String startup = appearance.getString("startup", "library");
+        appearance.edit().putString("startup", "library").commit();
+        SharedPreferences reader = context.getSharedPreferences("reader", 0);
+        boolean progress = reader.getBoolean("progress", true);
+        Activity activity = launchMain(context);
+        try {
+            clickAccessible("Downloads");
+            waitCount(activity, Library.get(context).books().size());
+            check(
+                    visibleAccessible("Downloads").isSelected(),
+                    "Downloads must be an actual selected destination");
+            clickAccessible("Recent");
+            check(
+                    visibleAccessible("Recent").isSelected(),
+                    "Recent must be an actual selected destination");
+            clickAccessible("Settings");
+            clickAccessible("Search settings");
+            waitForIdleSync();
+            AccessibilityNodeInfo input =
+                    getUiAutomation()
+                            .getRootInActiveWindow()
+                            .findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+            check(
+                    input != null && input.isEditable(),
+                    "Settings search must focus an editable input");
+            Bundle text = new Bundle();
+            text.putCharSequence(
+                    AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "progress bar");
+            check(
+                    input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, text),
+                    "Settings search must accept input");
+            waitForIdleSync();
+            AccessibilityNodeInfo toggle = visibleAccessible("Show progress bar");
+            check(
+                    toggle.isCheckable() && toggle.isChecked() == progress,
+                    "Reader toggle must expose its current state");
+            clickAccessible("Show progress bar");
+            check(
+                    reader.getBoolean("progress", true) != progress,
+                    "Inline reader settings must persist");
+            input =
+                    getUiAutomation()
+                            .getRootInActiveWindow()
+                            .findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+            text.putCharSequence(
+                    AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "no-such-setting");
+            check(
+                    input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, text),
+                    "Settings search must update");
+            waitForIdleSync();
+            visibleAccessible("No matching settings");
+            clickAccessible("Close");
+        } finally {
+            runOnMainSync(activity::finish);
+            reader.edit().putBoolean("progress", progress).commit();
             appearance.edit().putString("startup", startup).commit();
         }
     }

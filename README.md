@@ -10,6 +10,8 @@ Use the **ARM64** APK for ARM64 devices. Releases also include x86_64 and univer
 
 Install over your existing version to keep your library, accounts and progress. Do not uninstall first. The app checks GitHub Releases whenever it opens in the foreground; use **Settings → App updates → Check now** to retry immediately. Android asks you to confirm installation.
 
+The [0.7.0 preview](https://github.com/Poiki/ComicReader/releases/tag/v0.7.0) includes the new interface and MEGA cancellation fix. It requires manual installation and device testing; see its release notes for validation limits.
+
 Releases currently retain the original **test signing certificate**. The signing key is private and is not included in this repository. Play Protect rejected a previous emulator installation; successful download and signature verification do not guarantee system approval. See [testing](docs/testing.md).
 
 ## Read
@@ -17,7 +19,9 @@ Releases currently retain the original **test signing certificate**. The signing
 - Import local files with **+**, or choose **MEGA**, sign in, navigate to a folder and select **OK** to save it as your library.
 - Browse subfolders and filter by reading, unread, read or favorites. Tap a remote comic to download an offline copy; hold a comic to change its reading state or delete only its local copy.
 - Tap the sides of a page to turn, or the center to toggle controls. Pinch or double-tap to zoom. The reader includes manga direction, bookmarks, page jumps, brightness and optional volume-key navigation.
-- Choose list or cover view, light/dark/OLED themes, and whether startup opens your library, connections or the last unfinished comic. The gear opens grouped settings with current values: Appearance, Reading, Library and downloads, Cloud and progress, and Application.
+- Browse source cards and reading filters, then use Library, Recent, Favorites and Downloads in the bottom navigation. Cover tiles include file actions; the floating **+** imports files or connects a provider.
+- Choose list or cover view, light/dark/OLED themes, blue/orange/teal accents, and whether startup opens your library, connections or the last unfinished comic. Settings open as a full-screen, searchable page with five groups and inline switches.
+- Reader controls provide direct bookmarks, brightness, reading direction, page fit and volume-key navigation. The page stays clear of visible controls; the progress bar is optional. New installations default to OLED and blue.
 - English and Spanish follow the device language. Choose **Settings → App language** to override it; Android 13+ also exposes the app language in system settings.
 - Opening the app starts background cover preparation, including subfolders of the saved MEGA library. It continues while reading or outside the library screen; visible covers update as they arrive. Android may defer or pause it for network, battery or scheduling limits. If MEGA has no thumbnail, generating a cover downloads the comic once and discards the temporary file. This uses transfer quota. Default: Wi-Fi/unmetered networks; change it under **Settings → MEGA covers**.
 - Direct cloud comic downloads also default to Wi-Fi/unmetered networks. Enable mobile data under **Comic downloads** if wanted. A download stops if its connection becomes disallowed.

@@ -1,7 +1,7 @@
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#FF9000</item>
+        <item name="android:colorAccent">#00B0F0</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#FFFFFF</item>
@@ -10,11 +10,11 @@
     </style>
     <style name="AppThemeDark" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#FF9000</item>
+        <item name="android:colorAccent">#00B0F0</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowBackground">#121212</item>
         <item name="android:colorBackground">#121212</item>
-        <item name="android:colorBackgroundFloating">#242424</item>
+        <item name="android:colorBackgroundFloating">#202428</item>
         <item name="android:navigationBarColor">#121212</item>
         <item name="android:statusBarColor">#121212</item>
     </style>
@@ -25,4 +25,7 @@
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:statusBarColor">#000000</item>
     </style>
+    <style name="AccentBlue"><item name="android:colorAccent">#00B0F0</item></style>
+    <style name="AccentOrange"><item name="android:colorAccent">#FF9000</item></style>
+    <style name="AccentTeal"><item name="android:colorAccent">#16B8A6</item></style>
 </resources>
