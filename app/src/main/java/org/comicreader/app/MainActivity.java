@@ -39,6 +39,7 @@ public final class MainActivity extends Activity {
     private Button add;
     private boolean busy, resumed;
     private Updater updater;
+    private AlertDialog settingsDialog;
     private String megaAccount = "", megaName = "MEGA", catalogError = "";
     private long megaRoot = MegaClient.ROOT, megaFolder = MegaClient.ROOT, catalogUpdated;
     private boolean remoteMode, catalogStale = true, autoRefreshAttempted;
@@ -948,69 +949,246 @@ public final class MainActivity extends Activity {
     }
 
     private void more() {
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_title))
-                .setItems(
-                        new String[] {
-                            getString(R.string.ui_reader_settings),
-                            getString(R.string.ui_export_progress),
-                            getString(R.string.ui_import_progress),
-                            getString(R.string.ui_about),
-                            getString(R.string.ui_cloud_accounts),
-                            getString(R.string.ui_sync_progress),
-                            getString(R.string.ui_sort_by_title),
-                            getString(R.string.ui_theme),
-                            getString(R.string.ui_startup_screen),
-                            getString(R.string.ui_folders_and_libraries),
-                            getString(R.string.ui_refresh_library),
-                            getString(R.string.ui_app_updates),
-                            getString(R.string.app_language),
-                            getString(R.string.download_settings)
-                        },
-                        (dialog, selected) -> {
-                            switch (selected) {
-                                case 0 -> readingSettings();
-                                case 1 ->
-                                        startActivityForResult(
-                                                new Intent(Intent.ACTION_CREATE_DOCUMENT)
-                                                        .setType("application/octet-stream")
-                                                        .addCategory(Intent.CATEGORY_OPENABLE)
-                                                        .putExtra(
-                                                                Intent.EXTRA_TITLE,
-                                                                "comicreader-progress.crp"),
-                                                EXPORT);
-                                case 2 ->
-                                        startActivityForResult(
-                                                new Intent(Intent.ACTION_OPEN_DOCUMENT)
-                                                        .setType("*/*")
-                                                        .addCategory(Intent.CATEGORY_OPENABLE),
-                                                RESTORE);
-                                case 4 -> cloudMenu();
-                                case 5 -> sync();
-                                case 6 -> showLibrary(5);
-                                case 7 -> themeSettings();
-                                case 8 -> startupSettings();
-                                case 9 -> librarySources();
-                                case 10 -> {
-                                    if (remoteMode) refreshMega();
-                                    else refresh();
-                                }
-                                case 11 -> updater.showSettings();
-                                case 12 -> languageSettings();
-                                case 13 -> downloadSettings();
-                                case 3 ->
-                                        new AlertDialog.Builder(this)
-                                                .setTitle(getString(R.string.ui_comicreader_mit))
-                                                .setMessage(
-                                                        getString(
-                                                                R.string.about_message,
-                                                                MegaClient.instance(this).status()))
-                                                .setPositiveButton(
-                                                        getString(R.string.action_ok), null)
-                                                .show();
-                            }
-                        })
-                .show();
+        if (settingsDialog != null && settingsDialog.isShowing()) return;
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout options = Ui.column(this);
+        options.setPadding(0, 0, 0, Ui.dp(this, 12));
+        scroll.addView(options);
+        AlertDialog dialog =
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.settings_title)
+                        .setView(scroll)
+                        .setNegativeButton(R.string.action_close, null)
+                        .create();
+        settingsDialog = dialog;
+        dialog.setOnDismissListener(
+                ignored -> {
+                    if (settingsDialog == dialog) settingsDialog = null;
+                });
+
+        settingsSection(options, R.string.settings_appearance);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_palette,
+                R.string.ui_theme,
+                getString(
+                        switch (Ui.theme(this)) {
+                            case "dark" -> R.string.ui_dark;
+                            case "oled" -> R.string.ui_oled_black;
+                            default -> R.string.ui_light;
+                        }),
+                this::themeSettings);
+        String language = AppLanguage.selected(this);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_language,
+                R.string.app_language,
+                language.equals("es")
+                        ? "Español"
+                        : language.equals("en") ? "English" : getString(R.string.system_language),
+                this::languageSettings);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_power,
+                R.string.ui_startup_screen,
+                getString(
+                        switch (getSharedPreferences("appearance", 0)
+                                .getString("startup", "library")) {
+                            case "home" -> R.string.ui_connections_and_setup;
+                            case "reader" -> R.string.ui_last_unfinished_comic;
+                            default -> R.string.library_title;
+                        }),
+                this::startupSettings);
+
+        settingsSection(options, R.string.settings_reading);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_tune,
+                R.string.ui_reader_settings,
+                getString(R.string.settings_reading_summary),
+                this::readingSettings);
+
+        settingsSection(options, R.string.settings_library_downloads);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_folder,
+                R.string.ui_folders_and_libraries,
+                remoteMode ? megaName : getString(R.string.ui_local_library),
+                this::librarySources);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_list,
+                R.string.ui_sort_by_title,
+                getString(R.string.ui_title_a_z),
+                () -> showLibrary(5));
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_sync,
+                R.string.ui_refresh_library,
+                getString(R.string.settings_refresh_summary),
+                () -> {
+                    if (remoteMode) refreshMega();
+                    else refresh();
+                });
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_download,
+                R.string.download_settings,
+                getString(
+                        getSharedPreferences("downloads", 0).getBoolean("metered", false)
+                                ? R.string.covers_any
+                                : R.string.covers_wifi),
+                this::downloadSettings);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_grid,
+                R.string.remote_covers,
+                getString(
+                        switch (getSharedPreferences("appearance", 0).getString("covers", "wifi")) {
+                            case "any" -> R.string.covers_any;
+                            case "off" -> R.string.covers_downloaded;
+                            default -> R.string.covers_wifi;
+                        }),
+                this::coverSettings);
+
+        settingsSection(options, R.string.settings_cloud_progress);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_cloud,
+                R.string.ui_cloud_accounts,
+                getString(R.string.settings_accounts_summary),
+                this::cloudMenu);
+        SharedPreferences cloud = getSharedPreferences("cloud", 0);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_settings,
+                R.string.ui_sync_settings,
+                getString(
+                        !cloud.getBoolean("auto", false)
+                                ? R.string.settings_manual_sync
+                                : cloud.getBoolean("wifi", true)
+                                        ? R.string.settings_auto_wifi
+                                        : R.string.settings_auto_any),
+                this::syncSettings);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_sync,
+                R.string.ui_sync_progress,
+                switch (cloud.getString("provider", "")) {
+                    case "mega" -> "MEGA";
+                    case "drive" -> "Google Drive";
+                    case "webdav" -> "WebDAV";
+                    default -> getString(R.string.ui_no_provider);
+                },
+                this::sync);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_upload,
+                R.string.ui_export_progress,
+                getString(R.string.settings_export_summary),
+                () ->
+                        startActivityForResult(
+                                new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                                        .setType("application/octet-stream")
+                                        .addCategory(Intent.CATEGORY_OPENABLE)
+                                        .putExtra(Intent.EXTRA_TITLE, "comicreader-progress.crp"),
+                                EXPORT));
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_download,
+                R.string.ui_import_progress,
+                getString(R.string.settings_import_summary),
+                () ->
+                        startActivityForResult(
+                                new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                                        .setType("*/*")
+                                        .addCategory(Intent.CATEGORY_OPENABLE),
+                                RESTORE));
+
+        settingsSection(options, R.string.settings_application);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_download,
+                R.string.ui_app_updates,
+                getString(R.string.ui_updates_from_github_releases),
+                updater::showSettings);
+        settingsRow(
+                options,
+                dialog,
+                R.drawable.icon_info,
+                R.string.ui_about,
+                getString(R.string.ui_comicreader_mit),
+                () ->
+                        new AlertDialog.Builder(this)
+                                .setTitle(R.string.ui_comicreader_mit)
+                                .setMessage(
+                                        getString(
+                                                R.string.about_message,
+                                                MegaClient.instance(this).status()))
+                                .setPositiveButton(R.string.action_ok, null)
+                                .show());
+        dialog.show();
+        sizeSettingsDialog();
+    }
+
+    private void settingsSection(LinearLayout options, int title) {
+        TextView heading = Ui.text(this, getString(title), 14);
+        heading.setTypeface(null, android.graphics.Typeface.BOLD);
+        heading.setTextColor(Ui.dark(this) ? Ui.ACCENT : 0xff9c4b00);
+        heading.setPadding(Ui.dp(this, 12), Ui.dp(this, 16), Ui.dp(this, 12), Ui.dp(this, 6));
+        heading.setAccessibilityHeading(true);
+        options.addView(heading);
+    }
+
+    private void settingsRow(
+            LinearLayout options,
+            AlertDialog dialog,
+            int icon,
+            int title,
+            String summary,
+            Runnable action) {
+        homeRow(
+                options,
+                icon,
+                getString(title),
+                summary,
+                () -> {
+                    dialog.dismiss();
+                    action.run();
+                });
+    }
+
+    private void sizeSettingsDialog() {
+        if (settingsDialog == null || !settingsDialog.isShowing()) return;
+        android.content.res.Configuration configuration = getResources().getConfiguration();
+        settingsDialog
+                .getWindow()
+                .setLayout(
+                        Ui.dp(this, Math.max(240, Math.min(640, configuration.screenWidthDp - 32))),
+                        Ui.dp(
+                                this,
+                                Math.max(200, Math.min(800, configuration.screenHeightDp - 64))));
+    }
+
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration configuration) {
+        super.onConfigurationChanged(configuration);
+        sizeSettingsDialog();
     }
 
     private void themeSettings() {
@@ -1081,7 +1259,6 @@ public final class MainActivity extends Activity {
                         new boolean[] {preferences.getBoolean("metered", false)},
                         (dialog, index, checked) ->
                                 preferences.edit().putBoolean("metered", checked).apply())
-                .setNeutralButton(R.string.remote_covers, (dialog, which) -> coverSettings())
                 .setPositiveButton(R.string.action_done, null)
                 .show();
     }
@@ -1135,7 +1312,7 @@ public final class MainActivity extends Activity {
         boolean[] values = new boolean[keys.length];
         for (int i = 0; i < keys.length; i++) values[i] = preferences.getBoolean(keys[i], false);
         new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.ui_reading))
+                .setTitle(R.string.ui_reader_settings)
                 .setMultiChoiceItems(
                         labels,
                         values,
@@ -1152,7 +1329,6 @@ public final class MainActivity extends Activity {
                         new String[] {
                             getString(R.string.ui_google_drive_direct_access),
                             getString(R.string.ui_mega_direct_access),
-                            getString(R.string.ui_sync_settings),
                             getString(R.string.ui_optional_webdav),
                             getString(R.string.ui_disconnect_active_provider)
                         },
@@ -1161,10 +1337,10 @@ public final class MainActivity extends Activity {
                                 DriveAuth.signIn(
                                         this, this::driveConnected, error -> Ui.error(this, error));
                             else if (which == 1) megaLogin();
-                            else if (which == 2) syncSettings();
-                            else if (which == 3) webDavMenu();
+                            else if (which == 2) webDavMenu();
                             else disconnect();
                         })
+                .setNegativeButton(R.string.action_close, null)
                 .show();
     }
 
@@ -1586,10 +1762,7 @@ public final class MainActivity extends Activity {
             preferences.getBoolean("auto", false), preferences.getBoolean("wifi", true)
         };
         new AlertDialog.Builder(this)
-                .setTitle(
-                        getString(R.string.ui_progress)
-                                + getSharedPreferences("cloud", 0)
-                                        .getString("provider", getString(R.string.ui_no_provider)))
+                .setTitle(R.string.ui_sync_settings)
                 .setMultiChoiceItems(
                         new String[] {
                             getString(
@@ -1942,6 +2115,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (settingsDialog != null) settingsDialog.dismiss();
         updater.close();
         covers.close();
         worker.shutdownNow();

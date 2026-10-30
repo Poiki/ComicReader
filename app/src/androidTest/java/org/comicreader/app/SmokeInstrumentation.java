@@ -115,6 +115,9 @@ public final class SmokeInstrumentation extends Instrumentation {
             testApplicationCoverStore(context);
             pass(
                     "Cover generation survives Activity destruction and coalesces concurrent requests");
+            testGroupedSettings(context);
+            pass(
+                    "Grouped settings headings, current summaries, scrolling and retained action routes");
             results.putString("stream", "PASS: " + passed + " Android checks\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
@@ -738,12 +741,15 @@ public final class SmokeInstrumentation extends Instrumentation {
             AccessibilityNodeInfo root = getUiAutomation().getRootInActiveWindow();
             AccessibilityNodeInfo node = accessible(root, text);
             while (node != null) {
-                if (node.isClickable() && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                if (node.isVisibleToUser()
+                        && node.isClickable()
+                        && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
                     waitForIdleSync();
                     return;
                 }
                 node = node.getParent();
             }
+            if (i % 10 == 9 && scrollForward(root)) waitForIdleSync();
             Thread.sleep(30);
         }
         throw new AssertionError("Accessible control absent: " + text);
@@ -751,15 +757,37 @@ public final class SmokeInstrumentation extends Instrumentation {
 
     private AccessibilityNodeInfo accessible(AccessibilityNodeInfo node, String text) {
         if (node == null) return null;
+        String description =
+                node.getContentDescription() == null ? "" : node.getContentDescription().toString();
         if (text.equalsIgnoreCase(node.getText() == null ? "" : node.getText().toString())
-                || text.contentEquals(
-                        node.getContentDescription() == null ? "" : node.getContentDescription()))
-            return node;
+                || text.equals(description)
+                || description.startsWith(text + ". ")) return node;
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo found = accessible(node.getChild(i), text);
             if (found != null) return found;
         }
         return null;
+    }
+
+    private boolean scrollForward(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        if (node.isScrollable() && node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD))
+            return true;
+        for (int i = 0; i < node.getChildCount(); i++)
+            if (scrollForward(node.getChild(i))) return true;
+        return false;
+    }
+
+    private AccessibilityNodeInfo visibleAccessible(String text) throws Exception {
+        for (int i = 0; i < 20; i++) {
+            AccessibilityNodeInfo root = getUiAutomation().getRootInActiveWindow();
+            AccessibilityNodeInfo found = accessible(root, text);
+            if (found != null && found.isVisibleToUser()) return found;
+            if (!scrollForward(root)) break;
+            waitForIdleSync();
+            Thread.sleep(50);
+        }
+        throw new AssertionError("Visible control absent: " + text);
     }
 
     private void filter(String text) throws Exception {
@@ -1225,7 +1253,7 @@ public final class SmokeInstrumentation extends Instrumentation {
                 "Comic downloads must default to unmetered networks");
         for (boolean enabled : new boolean[] {true, false}) {
             clickAccessible("Settings");
-            clickAccessible("Downloads and covers");
+            clickAccessible("Comic downloads");
             clickAccessible("Allow comic downloads on mobile / metered networks");
             check(
                     context.getSharedPreferences("downloads", 0).getBoolean("metered", false)
@@ -1440,6 +1468,69 @@ public final class SmokeInstrumentation extends Instrumentation {
             release.countDown();
             pool.shutdownNow();
             if (!activity.isDestroyed()) runOnMainSync(activity::finish);
+            appearance.edit().putString("startup", startup).commit();
+        }
+    }
+
+    private void testGroupedSettings(Context context) throws Exception {
+        SharedPreferences appearance = context.getSharedPreferences("appearance", 0);
+        String startup = appearance.getString("startup", "library");
+        appearance.edit().putString("startup", "library").commit();
+        Activity activity = launchMain(context);
+        try {
+            clickAccessible("Settings");
+            check(
+                    visibleAccessible("Appearance").isHeading(),
+                    "Settings sections must be accessibility headings");
+            AccessibilityNodeInfo theme = visibleAccessible("Theme");
+            String expected =
+                    activity.getString(
+                            switch (Ui.theme(activity)) {
+                                case "dark" -> R.string.ui_dark;
+                                case "oled" -> R.string.ui_oled_black;
+                                default -> R.string.ui_light;
+                            });
+            check(
+                    theme.getContentDescription().toString().endsWith(". " + expected),
+                    "Theme row must expose the current value");
+            for (String section :
+                    new String[] {
+                        "Reading", "Library and downloads", "Cloud and progress", "Application"
+                    })
+                check(
+                        visibleAccessible(section).isHeading(),
+                        "Missing grouped heading: " + section);
+            clickAccessible("About");
+            check(
+                    visibleAccessible("ComicReader · MIT") != null,
+                    "The About action must remain available below the fold");
+            clickAccessible("OK");
+            clickAccessible("Settings");
+            clickAccessible("MEGA covers");
+            check(
+                    visibleAccessible("Wi-Fi / unmetered networks") != null,
+                    "Covers need a direct settings route");
+            clickAccessible("Cancel");
+            clickAccessible("Settings");
+            clickAccessible("Sync settings");
+            check(
+                    visibleAccessible("Automatically sync when using or closing the reader")
+                            != null,
+                    "Sync preferences must remain accessible without account-menu navigation");
+            clickAccessible("Done");
+            clickAccessible("Settings");
+            clickAccessible("Cloud accounts");
+            check(
+                    accessible(getUiAutomation().getRootInActiveWindow(), "Sync settings") == null,
+                    "Account selection must not duplicate synchronization preferences");
+            clickAccessible("Optional WebDAV");
+            check(
+                    visibleAccessible("WebDAV HTTPS") != null
+                            && visibleAccessible("Configure connection") != null,
+                    "Reorganized account actions must retain their provider route");
+            sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+        } finally {
+            runOnMainSync(activity::finish);
             appearance.edit().putString("startup", startup).commit();
         }
     }

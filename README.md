@@ -17,10 +17,10 @@ Releases currently retain the original **test signing certificate**. The signing
 - Import local files with **+**, or choose **MEGA**, sign in, navigate to a folder and select **OK** to save it as your library.
 - Browse subfolders and filter by reading, unread, read or favorites. Tap a remote comic to download an offline copy; hold a comic to change its reading state or delete only its local copy.
 - Tap the sides of a page to turn, or the center to toggle controls. Pinch or double-tap to zoom. The reader includes manga direction, bookmarks, page jumps, brightness and optional volume-key navigation.
-- Choose list or cover view, light/dark/OLED themes, and whether startup opens your library, connections or the last unfinished comic.
+- Choose list or cover view, light/dark/OLED themes, and whether startup opens your library, connections or the last unfinished comic. The gear opens grouped settings with current values: Appearance, Reading, Library and downloads, Cloud and progress, and Application.
 - English and Spanish follow the device language. Choose **Settings → App language** to override it; Android 13+ also exposes the app language in system settings.
-- Opening the app starts background cover preparation, including subfolders of the saved MEGA library. It continues while reading or outside the library screen; visible covers update as they arrive. Android may defer or pause it for network, battery or scheduling limits. If MEGA has no thumbnail, generating a cover downloads the comic once and discards the temporary file. This uses transfer quota. Default: Wi-Fi/unmetered networks; change it under **Settings → Downloads and covers → MEGA covers**.
-- Direct cloud comic downloads also default to Wi-Fi/unmetered networks. Enable mobile data under **Downloads and covers** if wanted. A download stops if its connection becomes disallowed.
+- Opening the app starts background cover preparation, including subfolders of the saved MEGA library. It continues while reading or outside the library screen; visible covers update as they arrive. Android may defer or pause it for network, battery or scheduling limits. If MEGA has no thumbnail, generating a cover downloads the comic once and discards the temporary file. This uses transfer quota. Default: Wi-Fi/unmetered networks; change it under **Settings → MEGA covers**.
+- Direct cloud comic downloads also default to Wi-Fi/unmetered networks. Enable mobile data under **Comic downloads** if wanted. A download stops if its connection becomes disallowed.
 
 After upgrading from a version that hid CBR files, use **Settings → Refresh library** to retrieve the folder listing again.
 
