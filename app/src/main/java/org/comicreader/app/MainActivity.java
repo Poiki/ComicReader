@@ -224,6 +224,7 @@ public final class MainActivity extends Activity {
         status = Ui.text(this, "", 12);
         status.setTextColor(Ui.secondary(this));
         status.setMaxLines(2);
+        status.setOnClickListener(view -> refreshMega());
         root.addView(status);
         View divider = new View(this);
         divider.setBackgroundColor(Ui.dark(this) ? 0xff171b1e : 0xffdddddd);
@@ -859,6 +860,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (!resumed) MegaClient.instance(this).browsing(true);
         resumed = true;
         covers.setPaused(busy);
         covers.observe(() -> adapter.notifyDataSetChanged());
@@ -907,7 +909,8 @@ public final class MainActivity extends Activity {
                                             && !home
                                             && !busy
                                             && !autoRefreshAttempted
-                                            && MegaClient.instance(this).loggedIn()) refreshMega();
+                                            && MegaClient.instance(this).loggedIn())
+                                        refreshMega(false);
                                 });
                     } catch (Exception e) {
                         runOnUiThread(() -> Ui.error(this, e));
@@ -988,6 +991,12 @@ public final class MainActivity extends Activity {
 
     private void updateStatus() {
         if (busy) return;
+        boolean retry = !home && remoteMode && !downloadsOnly && !recent && !catalogError.isEmpty();
+        status.setClickable(retry);
+        status.setFocusable(retry);
+        status.setMaxLines(retry ? 6 : 2);
+        status.setMinimumHeight(retry ? Ui.dp(this, 48) : 0);
+        status.setTooltipText(retry ? getString(R.string.ui_refresh_library) : null);
         SharedPreferences preferences = getSharedPreferences("cloud", 0);
         String error = preferences.getString("last_error", "");
         long synced = preferences.getLong("last_sync", 0);
@@ -1012,7 +1021,10 @@ public final class MainActivity extends Activity {
                                             : getString(R.string.ui_up_to_date))
                             + (catalogError.isEmpty()
                                     ? ""
-                                    : getString(R.string.ui_refresh_failed) + catalogError));
+                                    : getString(R.string.ui_refresh_failed)
+                                            + catalogError
+                                            + "\n"
+                                            + getString(R.string.ui_refresh_library)));
             return;
         }
         status.setText(
@@ -1158,6 +1170,10 @@ public final class MainActivity extends Activity {
     }
 
     private void refreshMega() {
+        refreshMega(true);
+    }
+
+    private void refreshMega(boolean interactive) {
         if (!remoteMode || busy) return;
         autoRefreshAttempted = true;
         String account = megaAccount, name = megaName;
@@ -1176,11 +1192,18 @@ public final class MainActivity extends Activity {
                         return null;
                     } catch (Exception error) {
                         catalogStale = true;
-                        catalogError = Ui.message(error);
+                        catalogError = Ui.message(this, error);
                         throw error;
                     }
                 },
-                ignored -> refresh());
+                ignored -> refresh(),
+                error -> {
+                    if (interactive) Ui.error(this, error);
+                    else
+                        android.util.Log.w(
+                                "ComicReader", "Automatic MEGA folder refresh failed", error);
+                    refresh();
+                });
     }
 
     private void bookMenu(Library.Book book) {
@@ -2640,6 +2663,21 @@ public final class MainActivity extends Activity {
     }
 
     private <T> void task(String label, Work<T> work, java.util.function.Consumer<T> done) {
+        task(
+                label,
+                work,
+                done,
+                error -> {
+                    Ui.error(this, error);
+                    refresh();
+                });
+    }
+
+    private <T> void task(
+            String label,
+            Work<T> work,
+            java.util.function.Consumer<T> done,
+            java.util.function.Consumer<Exception> failed) {
         if (busy) {
             Ui.toast(this, getString(R.string.ui_wait_for_the_current_operation_to_finish));
             return;
@@ -2671,8 +2709,7 @@ public final class MainActivity extends Activity {
                                     covers.setPaused(!resumed);
                                     for (View action : actions) action.setEnabled(true);
                                     updateStatus();
-                                    Ui.error(this, e);
-                                    refresh();
+                                    failed.accept(e);
                                 });
                     } finally {
                         CoverJob.resume(this);
@@ -2743,6 +2780,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        if (resumed) MegaClient.instance(this).browsing(false);
         resumed = false;
         updater.onPause();
         covers.setPaused(true);

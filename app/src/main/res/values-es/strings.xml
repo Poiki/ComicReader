@@ -30,6 +30,7 @@
     <string name="download_settings">"Descargas de cómics"</string>
     <string name="error_mega_access">"MEGA ha denegado el acceso. Comprueba tus credenciales y los permisos de la carpeta."</string>
     <string name="error_mega_busy_timeout">"MEGA ha tardado demasiado en terminar la operación anterior. Vuelve a intentarlo."</string>
+    <string name="error_mega_folder">"MEGA no ha encontrado esta carpeta después de recargarla. Vuelve a intentarlo o selecciona la carpeta de nuevo desde MEGA."</string>
     <string name="error_mega_quota">"Se ha agotado la cuota de transferencia de MEGA. Espera a que se restablezca o revisa tu plan de MEGA."</string>
     <string name="error_mega_session">"La sesión de MEGA ha caducado. Desconecta la cuenta e inicia sesión de nuevo."</string>
     <string name="error_storage">"No se ha podido guardar el cómic. Comprueba el espacio libre del dispositivo y vuelve a intentarlo."</string>

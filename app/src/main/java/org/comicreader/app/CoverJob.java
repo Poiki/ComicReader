@@ -133,6 +133,7 @@ public final class CoverJob extends JobService {
                                             android.os.Process.THREAD_PRIORITY_BACKGROUND);
                                     retry = prepare(this, CoverStore.get(this));
                                 } catch (InterruptedException error) {
+                                    Thread.currentThread().interrupt();
                                     retry = !current.stopped;
                                 } catch (Exception | OutOfMemoryError error) {
                                     retry = true;
@@ -141,7 +142,10 @@ public final class CoverJob extends JobService {
                                 } finally {
                                     boolean releaseSession;
                                     synchronized (CoverJob.class) {
-                                        releaseSession = foreground == 0;
+                                        releaseSession =
+                                                foreground == 0
+                                                        && !current.stopped
+                                                        && !Thread.currentThread().isInterrupted();
                                     }
                                     if (releaseSession && MegaClient.instance(this).loggedIn()) {
                                         try {
@@ -195,39 +199,33 @@ public final class CoverJob extends JobService {
         Set<Long> visited = new HashSet<>();
         folders.add(preferences.getLong("mega_root", MegaClient.ROOT));
         int entries = 0;
-        try {
-            while (!folders.isEmpty()) {
+        while (!folders.isEmpty()) {
+            checkInterrupted();
+            if (!CoverStore.remoteAllowed(context)) return true;
+            long folder = folders.removeFirst();
+            if (!visited.add(folder)) throw new IOException("Repeated folder in cover library");
+            for (MegaClient.Node node : mega.list(folder)) {
                 checkInterrupted();
-                if (!CoverStore.remoteAllowed(context)) return true;
-                long folder = folders.removeFirst();
-                if (!visited.add(folder)) throw new IOException("Repeated folder in cover library");
-                for (MegaClient.Node node : mega.list(folder)) {
+                if (++entries > Progress.MAX_BOOKS)
+                    throw new IOException("Cover library exceeds 50,000 entries");
+                if (node.directory()) {
+                    folders.addLast(node.handle());
+                    continue;
+                }
+                if (!ComicFiles.supported(node.name())
+                        || node.size() < 0
+                        || node.size() > ComicFiles.MAX_COMIC) continue;
+                String key = CoverStore.key(account, node);
+                if (store.contains(key)) continue;
+                if (!store.prefetchRoom()) return false;
+                try {
+                    store.load(key, null, account, node);
+                } catch (CoverStore.DecodeException error) {
                     checkInterrupted();
-                    if (++entries > Progress.MAX_BOOKS)
-                        throw new IOException("Cover library exceeds 50,000 entries");
-                    if (node.directory()) {
-                        folders.addLast(node.handle());
-                        continue;
-                    }
-                    if (!ComicFiles.supported(node.name())
-                            || node.size() < 0
-                            || node.size() > ComicFiles.MAX_COMIC) continue;
-                    String key = CoverStore.key(account, node);
-                    if (store.contains(key)) continue;
-                    if (!store.prefetchRoom()) return false;
-                    try {
-                        store.load(key, null, account, node);
-                    } catch (CoverStore.DecodeException error) {
-                        checkInterrupted();
-                        android.util.Log.w(
-                                "ComicReader",
-                                "Cannot prepare MEGA cover: " + node.handle(),
-                                error);
-                    }
+                    android.util.Log.w(
+                            "ComicReader", "Cannot prepare MEGA cover: " + node.handle(), error);
                 }
             }
-        } finally {
-            if (!Thread.currentThread().isInterrupted()) mega.suspend();
         }
         return false;
     }

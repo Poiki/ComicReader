@@ -20,7 +20,7 @@ UI text is defined in English and Spanish Android resources. `AppLanguage` uses 
 
 Imported files are hashed once with SHA-256, validated and moved or copied into private app storage. The hash identifies progress across providers and duplicate imports. Local comic contents have no additional encryption. Deleting a copy preserves progress and leaves the original external file intact.
 
-`Library` owns `library.db`, containing local books, progress records and a logical revision clock. The separate `mega-library.db` caches account-scoped handles, folder listings and content-hash links. A failed refresh retains the previous listing and reports its status. Choosing a folder stores its root; subfolder browsing fetches only folders the user visits.
+`Library` owns `library.db`, containing local books, progress records and a logical revision clock. The separate `mega-library.db` caches account-scoped handles, folder listings and content-hash links. A missing MEGA folder triggers one authenticated tree reload before failure. A failed refresh retains the previous listing; automatic checks show a retryable inline status, while explicit refreshes also report errors in a dialog. Choosing a folder stores its root; subfolder browsing fetches only folders the user visits.
 
 ## Reader
 
@@ -38,7 +38,7 @@ ZIP uses `ZipFile`, PDF uses Android `PdfRenderer`, and RAR uses Junrar with a 6
 
 Network work stays off the UI thread. `Secrets` encrypts saved sessions and WebDAV credentials using Android Keystore/AES-GCM. Google access tokens remain in memory. Account data is excluded from backups and device transfer. MEGA receives an explicitly writable private no-backup directory for its native cache; its internal cache is not described as wholly encrypted by Keystore.
 
-Progress sync is opt-in and coalesced through a non-periodic `JobScheduler` task. Default constraints require an unmetered network and a battery that is not low. Manual sync is explicit and may use mobile data. MEGA requests local logout on library pause or after sync while keeping the encrypted resumable session.
+Progress sync is opt-in and coalesced through a non-periodic `JobScheduler` task. Default constraints require an unmetered network and a battery that is not low. Manual sync is explicit and may use mobile data. MEGA retains its loaded tree while a library Activity is resumed. Idle cleanup on library pause or after background work requests local logout while keeping the encrypted resumable session; it defers if a browser, native request or transfer is active. Canceled cover work leaves session cleanup to the next idle opportunity. Explicit sign-out still revokes the session.
 
 The update client uses its own worker, checks on each foreground open and reuses OkHttp. It has no recurring job or permanent download service. The private update provider exposes only one verified cached APK through read-only URI grants.
 

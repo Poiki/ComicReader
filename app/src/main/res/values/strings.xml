@@ -30,6 +30,7 @@
     <string name="download_settings">"Comic downloads"</string>
     <string name="error_mega_access">"MEGA denied access. Check your credentials and folder permissions."</string>
     <string name="error_mega_busy_timeout">"MEGA took too long to finish the previous operation. Please try again."</string>
+    <string name="error_mega_folder">"MEGA could not find this folder after reloading. Retry, or select the folder again from MEGA."</string>
     <string name="error_mega_quota">"MEGA transfer quota exhausted. Wait for it to reset or check your MEGA plan."</string>
     <string name="error_mega_session">"Your MEGA session expired. Disconnect the account and sign in again."</string>
     <string name="error_storage">"Could not save the comic. Check available device storage and try again."</string>

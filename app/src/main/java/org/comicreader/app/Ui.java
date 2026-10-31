@@ -1,6 +1,7 @@
 package org.comicreader.app;
 
 import android.app.*;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.view.*;
@@ -229,7 +230,7 @@ final class Ui {
         return message == null || message.isBlank() ? error.getClass().getSimpleName() : message;
     }
 
-    static void error(Activity activity, Throwable error) {
+    static String message(Context context, Throwable error) {
         int translated =
                 switch (message(error)) {
                     case "Cannot save the comic",
@@ -243,12 +244,17 @@ final class Ui {
                             R.string.error_mega_access;
                     case "MEGA took too long to finish the previous operation; try again" ->
                             R.string.error_mega_busy_timeout;
+                    case "The MEGA folder is no longer available" -> R.string.error_mega_folder;
                     default -> 0;
                 };
+        return translated == 0 ? message(error) : context.getString(translated);
+    }
+
+    static void error(Activity activity, Throwable error) {
         if (!activity.isFinishing() && !activity.isDestroyed())
             new AlertDialog.Builder(activity)
                     .setTitle(activity.getString(R.string.error_title))
-                    .setMessage(translated == 0 ? message(error) : activity.getString(translated))
+                    .setMessage(message(activity, error))
                     .setPositiveButton(activity.getString(R.string.action_ok), null)
                     .show();
     }

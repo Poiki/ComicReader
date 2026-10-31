@@ -9,6 +9,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 final class MegaClient {
@@ -27,6 +28,7 @@ final class MegaClient {
     private volatile String unavailable;
     private volatile Transfer pending;
     private volatile Request pendingRequest;
+    private final AtomicInteger browsers = new AtomicInteger();
 
     private MegaClient(Context context) {
         this.context = context;
@@ -142,8 +144,13 @@ final class MegaClient {
     }
 
     synchronized List<Node> list(long parent) throws Exception {
-        connected();
+        boolean fetched = connected();
         MegaNode folder = parent == ROOT ? api.getRootNode() : api.getNodeByHandle(parent);
+        if ((folder == null || !folder.isFolder()) && !fetched) {
+            ready = false;
+            connected();
+            folder = parent == ROOT ? api.getRootNode() : api.getNodeByHandle(parent);
+        }
         if (folder == null || !folder.isFolder())
             throw new IOException("The MEGA folder is no longer available");
         List<Node> entries = new ArrayList<>();
@@ -327,11 +334,18 @@ final class MegaClient {
         }
     }
 
+    void browsing(boolean active) {
+        if (browsers.addAndGet(active ? 1 : -1) < 0)
+            throw new IllegalStateException("Unbalanced MEGA browser lifecycle");
+    }
+
     synchronized void suspend() throws Exception {
         worker();
-        if (api == null) return;
-        awaitTransfer();
-        awaitRequests();
+        if (api == null
+                || browsers.get() != 0
+                || pending != null
+                || pendingRequest != null
+                || Thread.currentThread().isInterrupted()) return;
         if (api.isLoggedIn() != 0) request(api::localLogout);
         ready = false;
     }
