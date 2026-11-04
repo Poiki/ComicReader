@@ -6,6 +6,7 @@ Original ComicReader code is licensed under MIT. Dependency licenses remain sepa
 | --- | --- | --- |
 | [OkHttp 4.12.0](https://github.com/square/okhttp/tree/parent-4.12.0) and [Okio](https://github.com/square/okio) | HTTPS and WebDAV | Apache-2.0 |
 | [Kotlin standard library](https://github.com/JetBrains/kotlin) | OkHttp and MEGA dependencies | Apache-2.0 |
+| [AndroidX SwipeRefreshLayout 1.2.0](https://developer.android.com/jetpack/androidx/releases/swiperefreshlayout) and AndroidX view support | Pull-to-refresh on library and provider lists | Apache-2.0; included in `assets/licenses/androidx.txt` |
 | [Java API desugaring](https://github.com/google/desugar_jdk_libs) | Android compatibility | GPL-2.0 with Classpath Exception; toolchain notices apply |
 | [Google Play services Auth](https://developers.google.com/android/guides/overview) | Direct Drive authorization | Google SDK terms; not original MIT code |
 | [MEGA SDK 10.21.0](https://github.com/meganz/sdk/tree/v10.21.0) | Native MEGA API and cryptography | BSD-2-Clause plus native dependency licenses, bundled as assets |

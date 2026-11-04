@@ -12,6 +12,8 @@ import android.view.*;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
 import java.io.*;
 import java.net.URI;
 import java.util.*;
@@ -34,6 +36,7 @@ public final class MainActivity extends Activity {
     private LinearLayout libraryScreen, bottomBar, topBar, sourceCards, filterChips, settingsBody;
     private TextView sectionTitle;
     private GridView shelf;
+    private SwipeRefreshLayout shelfRefresh;
     private BaseAdapter adapter;
     private CoverCache covers;
     private ImageButton add;
@@ -126,14 +129,9 @@ public final class MainActivity extends Activity {
         shelf.setVerticalSpacing(Ui.dp(this, 8));
         shelf.setHorizontalSpacing(Ui.dp(this, 8));
         shelf.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
-        TextView empty = Ui.text(this, getString(R.string.library_empty_section), 16);
-        empty.setTextColor(Ui.secondary(this));
-        empty.setGravity(Gravity.CENTER);
-        FrameLayout libraryBody = new FrameLayout(this);
-        libraryBody.addView(shelf, new FrameLayout.LayoutParams(-1, -1));
-        libraryBody.addView(empty, new FrameLayout.LayoutParams(-1, -1));
-        shelf.setEmptyView(empty);
-        libraryScreen.addView(libraryBody, new LinearLayout.LayoutParams(-1, 0, 1));
+        shelfRefresh = Ui.refreshable(this, shelf, getString(R.string.library_empty_section));
+        Ui.onRefresh(shelfRefresh, this::refreshCurrent);
+        libraryScreen.addView(shelfRefresh, new LinearLayout.LayoutParams(-1, 0, 1));
         adapter =
                 new BaseAdapter() {
                     public int getCount() {
@@ -887,6 +885,7 @@ public final class MainActivity extends Activity {
                         runOnUiThread(
                                 () -> {
                                     if (isDestroyed() || ticket != refreshGeneration) return;
+                                    shelfRefresh.setRefreshing(false);
                                     books.clear();
                                     books.addAll(loaded);
                                     localBooks.clear();
@@ -913,7 +912,11 @@ public final class MainActivity extends Activity {
                                         refreshMega(false);
                                 });
                     } catch (Exception e) {
-                        runOnUiThread(() -> Ui.error(this, e));
+                        runOnUiThread(
+                                () -> {
+                                    shelfRefresh.setRefreshing(false);
+                                    Ui.error(this, e);
+                                });
                     }
                 });
     }
@@ -1173,6 +1176,16 @@ public final class MainActivity extends Activity {
         refreshMega(true);
     }
 
+    private void refreshCurrent() {
+        if (busy) {
+            shelfRefresh.setRefreshing(false);
+            return;
+        }
+        shelfRefresh.setRefreshing(true);
+        if (remoteMode && !downloadsOnly && !recent) refreshMega();
+        else refresh();
+    }
+
     private void refreshMega(boolean interactive) {
         if (!remoteMode || busy) return;
         autoRefreshAttempted = true;
@@ -1187,7 +1200,8 @@ public final class MainActivity extends Activity {
                         if (!account.equals(mega.account()))
                             throw new IOException(
                                     "The saved library belongs to another MEGA account");
-                        MegaLibrary.get(this).replace(account, folder, name, mega.list(folder));
+                        MegaLibrary.get(this)
+                                .replace(account, folder, name, mega.list(folder, interactive));
                         catalogStale = false;
                         return null;
                     } catch (Exception error) {
@@ -1472,10 +1486,7 @@ public final class MainActivity extends Activity {
                 R.drawable.icon_sync,
                 R.string.ui_refresh_library,
                 "",
-                () -> {
-                    if (remoteMode && !downloadsOnly) refreshMega();
-                    else refresh();
-                });
+                this::refreshCurrent);
 
         group =
                 settingsSection(
@@ -2030,65 +2041,72 @@ public final class MainActivity extends Activity {
         task(
                 getString(R.string.ui_loading_google_drive),
                 () -> drive.list(folder),
-                entries -> {
-                    List<DriveClient.Entry> listed = new ArrayList<>();
-                    for (DriveClient.Entry entry : entries)
-                        if (entry.directory() || ComicFiles.supported(entry.name()))
-                            listed.add(entry);
-                    String[] labels = new String[listed.size()];
-                    for (int i = 0; i < listed.size(); i++)
-                        labels[i] =
-                                (listed.get(i).directory()
-                                                ? getString(R.string.folder_name_prefix)
-                                                : "")
-                                        + listed.get(i).name();
-                    new AlertDialog.Builder(this)
-                            .setTitle("Google Drive")
-                            .setItems(
-                                    labels,
-                                    (dialog, index) -> {
-                                        DriveClient.Entry entry = listed.get(index);
-                                        if (entry.directory()) {
-                                            parents.push(folder);
-                                            browseDrive(drive, entry.id(), parents);
-                                        } else
-                                            confirmDownload(
-                                                    entry.name(),
-                                                    entry.size(),
-                                                    () ->
-                                                            downloadTask(
-                                                                    getString(
-                                                                            R.string
-                                                                                    .ui_downloading_from_drive),
-                                                                    () -> {
-                                                                        try (InputStream input =
-                                                                                drive.download(
-                                                                                        entry
-                                                                                                .id())) {
-                                                                            return Importer
-                                                                                    .fromStream(
-                                                                                            this,
-                                                                                            entry
-                                                                                                    .name(),
-                                                                                            input);
-                                                                        }
-                                                                    },
-                                                                    book -> {
-                                                                        refresh();
-                                                                        open(book);
-                                                                    }));
-                                    })
-                            .setNegativeButton(getString(R.string.action_close), null)
-                            .setNeutralButton(
-                                    parents.isEmpty()
-                                            ? getString(R.string.ui_root)
-                                            : getString(R.string.ui_up),
-                                    (dialog, which) -> {
-                                        if (!parents.isEmpty())
-                                            browseDrive(drive, parents.pop(), parents);
-                                    })
-                            .show();
-                });
+                entries -> showDriveFolder(drive, folder, parents, entries));
+    }
+
+    private void showDriveFolder(
+            DriveClient drive,
+            String folder,
+            Deque<String> parents,
+            List<DriveClient.Entry> entries) {
+        List<DriveClient.Entry> listed = new ArrayList<>();
+        for (DriveClient.Entry entry : entries)
+            if (entry.directory() || ComicFiles.supported(entry.name())) listed.add(entry);
+        String[] labels = new String[listed.size()];
+        for (int i = 0; i < listed.size(); i++)
+            labels[i] =
+                    (listed.get(i).directory() ? getString(R.string.folder_name_prefix) : "")
+                            + listed.get(i).name();
+        AlertDialog picker =
+                new AlertDialog.Builder(this)
+                        .setTitle("Google Drive")
+                        .setItems(
+                                labels,
+                                (dialog, index) -> {
+                                    DriveClient.Entry entry = listed.get(index);
+                                    if (entry.directory()) {
+                                        parents.push(folder);
+                                        browseDrive(drive, entry.id(), parents);
+                                    } else
+                                        confirmDownload(
+                                                entry.name(),
+                                                entry.size(),
+                                                () ->
+                                                        downloadTask(
+                                                                getString(
+                                                                        R.string
+                                                                                .ui_downloading_from_drive),
+                                                                () -> {
+                                                                    try (InputStream input =
+                                                                            drive.download(
+                                                                                    entry.id())) {
+                                                                        return Importer.fromStream(
+                                                                                this,
+                                                                                entry.name(),
+                                                                                input);
+                                                                    }
+                                                                },
+                                                                book -> {
+                                                                    refresh();
+                                                                    open(book);
+                                                                }));
+                                })
+                        .setNegativeButton(getString(R.string.action_close), null)
+                        .setNeutralButton(
+                                parents.isEmpty()
+                                        ? getString(R.string.ui_root)
+                                        : getString(R.string.ui_up),
+                                (dialog, which) -> {
+                                    if (!parents.isEmpty())
+                                        browseDrive(drive, parents.pop(), parents);
+                                })
+                        .show();
+        folderRefresh(
+                picker,
+                getString(R.string.ui_loading_google_drive),
+                getString(R.string.ui_folder_empty),
+                () -> drive.list(folder),
+                updated -> showDriveFolder(drive, folder, parents, updated));
     }
 
     private void megaLogin() {
@@ -2179,15 +2197,13 @@ public final class MainActivity extends Activity {
         String[] labels = directories.stream().map(MegaClient.Node::name).toArray(String[]::new);
         AlertDialog.Builder dialog =
                 new AlertDialog.Builder(this).setTitle(getString(R.string.ui_choose_folder) + name);
-        if (directories.isEmpty()) dialog.setMessage(getString(R.string.choose_folder_empty));
-        else
-            dialog.setItems(
-                    labels,
-                    (picker, index) -> {
-                        MegaClient.Node entry = directories.get(index);
-                        parents.push(new MegaClient.Node(folder, name, true, 0));
-                        chooseMegaFolder(mega, entry.handle(), entry.name(), parents);
-                    });
+        dialog.setItems(
+                labels,
+                (picker, index) -> {
+                    MegaClient.Node entry = directories.get(index);
+                    parents.push(new MegaClient.Node(folder, name, true, 0));
+                    chooseMegaFolder(mega, entry.handle(), entry.name(), parents);
+                });
         dialog.setPositiveButton(
                         getString(R.string.action_ok),
                         (picker, which) ->
@@ -2231,7 +2247,12 @@ public final class MainActivity extends Activity {
                         MegaClient.Node parent = parents.pop();
                         chooseMegaFolder(mega, parent.handle(), parent.name(), parents);
                     });
-        dialog.show();
+        folderRefresh(
+                dialog.show(),
+                getString(R.string.ui_loading_mega_folders),
+                getString(R.string.choose_folder_empty),
+                () -> new FolderListing(mega.account(), mega.list(folder, true)),
+                updated -> showMegaFolderPicker(mega, folder, name, parents, updated));
     }
 
     record FolderListing(String account, List<MegaClient.Node> nodes) {}
@@ -2434,95 +2455,154 @@ public final class MainActivity extends Activity {
         task(
                 getString(R.string.ui_loading_folder),
                 () -> dav.list(folder),
-                entries -> {
-                    List<WebDav.Entry> listed = new ArrayList<>();
-                    for (WebDav.Entry entry : entries)
-                        if (!entry.name().equals(".comicreader-state-v1")
-                                && (entry.directory() || ComicFiles.supported(entry.name())))
-                            listed.add(entry);
-                    listed.sort(
-                            (a, b) ->
-                                    a.directory() == b.directory()
-                                            ? ComicFiles.naturalCompare(a.name(), b.name())
-                                            : a.directory() ? -1 : 1);
-                    String[] labels = new String[listed.size()];
-                    for (int i = 0; i < listed.size(); i++)
-                        labels[i] =
-                                (listed.get(i).directory()
-                                                ? getString(R.string.folder_name_prefix)
-                                                : "")
-                                        + listed.get(i).name();
-                    new AlertDialog.Builder(this)
-                            .setTitle(folder.getPath())
-                            .setItems(
-                                    labels,
-                                    (dialog, index) -> {
-                                        WebDav.Entry entry = listed.get(index);
-                                        if (entry.directory()) {
-                                            parents.push(folder);
-                                            browse(dav, entry.uri(), parents);
-                                        } else
-                                            new AlertDialog.Builder(this)
-                                                    .setTitle(entry.name())
-                                                    .setMessage(
-                                                            getString(
-                                                                            R.string
-                                                                                    .ui_download_a_private_copy_for_offline_reading)
-                                                                    + (entry.size() >= 0
-                                                                            ? " ("
-                                                                                    + String.format(
-                                                                                            Locale
-                                                                                                    .getDefault(),
-                                                                                            getString(
-                                                                                                    R
-                                                                                                            .string
-                                                                                                            .ui_1f_mib),
+                entries -> showWebDavFolder(dav, folder, parents, entries));
+    }
+
+    private void showWebDavFolder(
+            WebDav dav, URI folder, Deque<URI> parents, List<WebDav.Entry> entries) {
+        List<WebDav.Entry> listed = new ArrayList<>();
+        for (WebDav.Entry entry : entries)
+            if (!entry.name().equals(".comicreader-state-v1")
+                    && (entry.directory() || ComicFiles.supported(entry.name()))) listed.add(entry);
+        listed.sort(
+                (a, b) ->
+                        a.directory() == b.directory()
+                                ? ComicFiles.naturalCompare(a.name(), b.name())
+                                : a.directory() ? -1 : 1);
+        String[] labels = new String[listed.size()];
+        for (int i = 0; i < listed.size(); i++)
+            labels[i] =
+                    (listed.get(i).directory() ? getString(R.string.folder_name_prefix) : "")
+                            + listed.get(i).name();
+        AlertDialog picker =
+                new AlertDialog.Builder(this)
+                        .setTitle(folder.getPath())
+                        .setItems(
+                                labels,
+                                (dialog, index) -> {
+                                    WebDav.Entry entry = listed.get(index);
+                                    if (entry.directory()) {
+                                        parents.push(folder);
+                                        browse(dav, entry.uri(), parents);
+                                    } else
+                                        new AlertDialog.Builder(this)
+                                                .setTitle(entry.name())
+                                                .setMessage(
+                                                        getString(
+                                                                        R.string
+                                                                                .ui_download_a_private_copy_for_offline_reading)
+                                                                + (entry.size() >= 0
+                                                                        ? " ("
+                                                                                + String.format(
+                                                                                        Locale
+                                                                                                .getDefault(),
+                                                                                        getString(
+                                                                                                R
+                                                                                                        .string
+                                                                                                        .ui_1f_mib),
+                                                                                        entry.size()
+                                                                                                / 1048576.0)
+                                                                                + ")"
+                                                                        : "")
+                                                                + ".")
+                                                .setNegativeButton(
+                                                        getString(R.string.action_cancel), null)
+                                                .setPositiveButton(
+                                                        getString(R.string.ui_download),
+                                                        (d, w) ->
+                                                                downloadTask(
+                                                                        getString(
+                                                                                R.string
+                                                                                        .ui_downloading),
+                                                                        () -> {
+                                                                            try (InputStream in =
+                                                                                    dav.download(
                                                                                             entry
-                                                                                                            .size()
-                                                                                                    / 1048576.0)
-                                                                                    + ")"
-                                                                            : "")
-                                                                    + ".")
-                                                    .setNegativeButton(
-                                                            getString(R.string.action_cancel), null)
-                                                    .setPositiveButton(
-                                                            getString(R.string.ui_download),
-                                                            (d, w) ->
-                                                                    downloadTask(
-                                                                            getString(
-                                                                                    R.string
-                                                                                            .ui_downloading),
-                                                                            () -> {
-                                                                                try (InputStream
-                                                                                        in =
-                                                                                                dav
-                                                                                                        .download(
-                                                                                                                entry
-                                                                                                                        .uri())) {
-                                                                                    return Importer
-                                                                                            .fromStream(
-                                                                                                    this,
-                                                                                                    entry
-                                                                                                            .name(),
-                                                                                                    in);
-                                                                                }
-                                                                            },
-                                                                            book -> {
-                                                                                refresh();
-                                                                                open(book);
-                                                                            }))
-                                                    .show();
-                                    })
-                            .setNegativeButton(getString(R.string.action_close), null)
-                            .setNeutralButton(
-                                    parents.isEmpty()
-                                            ? getString(R.string.ui_root)
-                                            : getString(R.string.ui_up),
-                                    (dialog, which) -> {
-                                        if (!parents.isEmpty()) browse(dav, parents.pop(), parents);
-                                    })
-                            .show();
+                                                                                                    .uri())) {
+                                                                                return Importer
+                                                                                        .fromStream(
+                                                                                                this,
+                                                                                                entry
+                                                                                                        .name(),
+                                                                                                in);
+                                                                            }
+                                                                        },
+                                                                        book -> {
+                                                                            refresh();
+                                                                            open(book);
+                                                                        }))
+                                                .show();
+                                })
+                        .setNegativeButton(getString(R.string.action_close), null)
+                        .setNeutralButton(
+                                parents.isEmpty()
+                                        ? getString(R.string.ui_root)
+                                        : getString(R.string.ui_up),
+                                (dialog, which) -> {
+                                    if (!parents.isEmpty()) browse(dav, parents.pop(), parents);
+                                })
+                        .show();
+        folderRefresh(
+                picker,
+                getString(R.string.ui_loading_folder),
+                getString(R.string.ui_folder_empty),
+                () -> dav.list(folder),
+                updated -> showWebDavFolder(dav, folder, parents, updated));
+    }
+
+    private <T> void folderRefresh(
+            AlertDialog dialog,
+            String label,
+            String empty,
+            Work<T> load,
+            java.util.function.Consumer<T> show) {
+        ListView list = dialog.getListView();
+        ViewGroup parent = (ViewGroup) list.getParent();
+        int position = parent.indexOfChild(list);
+        ViewGroup.LayoutParams layout = list.getLayoutParams();
+        layout.height =
+                Math.min(Ui.dp(this, 320), getResources().getDisplayMetrics().heightPixels / 2);
+        parent.removeView(list);
+        SwipeRefreshLayout pull = Ui.refreshable(this, list, empty);
+        parent.addView(pull, position, layout);
+        Ui.onRefresh(
+                pull,
+                () -> {
+                    if (busy) {
+                        pull.setRefreshing(false);
+                        return;
+                    }
+                    folderLoading(dialog, pull, true);
+                    task(
+                            label,
+                            load,
+                            result -> {
+                                folderLoading(dialog, pull, false);
+                                if (dialog.isShowing()) {
+                                    dialog.dismiss();
+                                    show.accept(result);
+                                }
+                            },
+                            error -> {
+                                folderLoading(dialog, pull, false);
+                                if (dialog.isShowing()) Ui.error(this, error);
+                                else
+                                    android.util.Log.w(
+                                            "ComicReader",
+                                            "Dismissed folder refresh failed",
+                                            error);
+                            });
                 });
+        dialog.setOnDismissListener(ignored -> pull.setRefreshing(false));
+    }
+
+    private void folderLoading(AlertDialog dialog, SwipeRefreshLayout pull, boolean loading) {
+        dialog.getListView().setEnabled(!loading);
+        for (int which : new int[] {AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEUTRAL}) {
+            Button button = dialog.getButton(which);
+            if (button != null) button.setEnabled(!loading);
+        }
+        pull.setRefreshing(loading);
     }
 
     private void importUris(List<Uri> uris) {
@@ -2696,6 +2776,7 @@ public final class MainActivity extends Activity {
                                 () -> {
                                     if (isDestroyed()) return;
                                     busy = false;
+                                    shelfRefresh.setRefreshing(false);
                                     covers.setPaused(!resumed);
                                     for (View action : actions) action.setEnabled(true);
                                     updateStatus();
@@ -2706,6 +2787,7 @@ public final class MainActivity extends Activity {
                                 () -> {
                                     if (isDestroyed()) return;
                                     busy = false;
+                                    shelfRefresh.setRefreshing(false);
                                     covers.setPaused(!resumed);
                                     for (View action : actions) action.setEnabled(true);
                                     updateStatus();
@@ -2780,6 +2862,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        shelfRefresh.setRefreshing(false);
         if (resumed) MegaClient.instance(this).browsing(false);
         resumed = false;
         updater.onPause();

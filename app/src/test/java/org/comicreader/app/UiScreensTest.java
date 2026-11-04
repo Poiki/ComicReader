@@ -97,7 +97,7 @@ public final class UiScreensTest {
             for (int i = 0; i < group.getChildCount(); i++) checkButtons(group.getChildAt(i));
     }
 
-    private static void screenshot(View root, int width, int height, String name) throws Exception {
+    static void screenshot(View root, int width, int height, String name) throws Exception {
         layout(root, width, height);
         checkButtons(root);
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -110,7 +110,7 @@ public final class UiScreensTest {
         bitmap.recycle();
     }
 
-    private static Library.Book fixture(Context context, int number) throws Exception {
+    static Library.Book fixture(Context context, int number) throws Exception {
         Bitmap bitmap = Bitmap.createBitmap(192, 288, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawColor(Color.rgb(25 + number * 17, 50 + number * 9, 110 + number * 6));

@@ -9,8 +9,8 @@ android {
         applicationId 'org.comicreader.app'
         minSdk 28
         targetSdk 36
-        versionCode 11
-        versionName '0.7.2'
+        versionCode 12
+        versionName '0.7.3'
         testInstrumentationRunner 'org.comicreader.app.SmokeInstrumentation'
     }
     compileOptions {
@@ -46,6 +46,7 @@ android {
 
 dependencies {
     implementation project(':mega-sdk')
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.2.0'
     implementation 'com.github.junrar:junrar:8.1.2'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.google.android.gms:play-services-auth:22.0.0'

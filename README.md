@@ -10,7 +10,7 @@ Use the **ARM64** APK for ARM64 devices. Releases also include x86_64 and univer
 
 Install over your existing version to keep your library, accounts and progress. Do not uninstall first. The app checks GitHub Releases whenever it opens in the foreground; use **Settings → App updates → Check now** to retry immediately. Android asks you to confirm installation.
 
-[Version 0.7.2](https://github.com/Poiki/ComicReader/releases/tag/v0.7.2) reloads missing MEGA folders before reporting failure and keeps automatic refresh errors inside the library. See its release notes for validation limits.
+[Version 0.7.3](https://github.com/Poiki/ComicReader/releases/tag/v0.7.3) adds pull-to-refresh to the library and MEGA, Drive and WebDAV folder lists, including empty folders. See its release notes for validation limits.
 
 Releases currently retain the original **test signing certificate**. The signing key is private and is not included in this repository. Play Protect rejected a previous emulator installation; successful download and signature verification do not guarantee system approval. See [testing](docs/testing.md).
 
@@ -18,6 +18,7 @@ Releases currently retain the original **test signing certificate**. The signing
 
 - Import local files with **+**, or choose **MEGA**, sign in, navigate to a folder and select **OK** to save it as your library.
 - Browse subfolders and filter by reading, unread, read or favorites. Tap a remote comic to download an offline copy; hold a comic to change its reading state or delete only its local copy.
+- Pull down at the top of a list to refresh its current folder, keeping your filters. MEGA refresh fetches the server tree; the local library rereads imported private copies. Provider dialogs retain their contents if a refresh fails.
 - Tap the sides of a page to turn, or the center to toggle controls. Pinch or double-tap to zoom. The reader includes manga direction, bookmarks, page jumps, brightness and optional volume-key navigation.
 - Browse source cards and reading filters, then use Library, Recent, Favorites and Downloads in the bottom navigation. Cover tiles include file actions; the floating **+** imports files or connects a provider.
 - Choose list or cover view, light/dark/OLED themes, blue/orange/teal accents, and whether startup opens your library, connections or the last unfinished comic. Settings open as a full-screen, searchable page with five groups and inline switches.

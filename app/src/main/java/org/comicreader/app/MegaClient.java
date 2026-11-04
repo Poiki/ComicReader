@@ -144,7 +144,15 @@ final class MegaClient {
     }
 
     synchronized List<Node> list(long parent) throws Exception {
+        return list(parent, false);
+    }
+
+    synchronized List<Node> list(long parent, boolean reload) throws Exception {
         boolean fetched = connected();
+        if (reload && !fetched) {
+            ready = false;
+            fetched = connected();
+        }
         MegaNode folder = parent == ROOT ? api.getRootNode() : api.getNodeByHandle(parent);
         if ((folder == null || !folder.isFolder()) && !fetched) {
             ready = false;

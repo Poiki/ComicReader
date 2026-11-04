@@ -72,8 +72,17 @@ public final class MegaFolderTest {
     }
 
     private static final class Folder extends MegaNode {
+        private final String name;
+        private final long handle;
+
         Folder() {
+            this("Comics", 123);
+        }
+
+        Folder(String name, long handle) {
             super(0, false);
+            this.name = name;
+            this.handle = handle;
         }
 
         @Override
@@ -83,12 +92,17 @@ public final class MegaFolderTest {
 
         @Override
         public String getName() {
-            return "Comics";
+            return name;
         }
 
         @Override
         public long getHandle() {
-            return 123;
+            return handle;
+        }
+
+        @Override
+        public long getSize() {
+            return 0;
         }
     }
 
@@ -96,6 +110,7 @@ public final class MegaFolderTest {
         final AtomicInteger fetches = new AtomicInteger(), logouts = new AtomicInteger();
         volatile boolean available = true, restore = true;
         volatile int loggedIn = 1;
+        volatile String name, nextName;
 
         Api() {
             super(null, "Test", null, null);
@@ -123,12 +138,15 @@ public final class MegaFolderTest {
 
         @Override
         public ArrayList<MegaNode> getChildren(MegaNode parent) {
-            return new ArrayList<>();
+            return name == null
+                    ? new ArrayList<>()
+                    : new ArrayList<>(List.of(new Folder(name, 456)));
         }
 
         @Override
         public void fetchNodes(MegaRequestListenerInterface listener) {
             fetches.incrementAndGet();
+            if (nextName != null) name = nextName;
             if (restore) available = true;
             listener.onRequestFinish(this, new Reply(MegaRequest.TYPE_FETCH_NODES), new Success());
         }
@@ -190,6 +208,80 @@ public final class MegaFolderTest {
     public void initialTreeLoadDoesNotRetryAgainForAMissingFolder() throws Exception {
         ReflectionHelpers.setField(client, "ready", false);
         genuinelyMissingFolderRemainsAnErrorAfterOneReload();
+    }
+
+    @Test
+    public void explicitRefreshFetchesExactlyOneTree() throws Exception {
+        worker.submit(() -> client.list(123, true)).get(2, TimeUnit.SECONDS);
+        assertEquals(1, api.fetches.get());
+        ReflectionHelpers.setField(client, "ready", false);
+        worker.submit(() -> client.list(123, true)).get(2, TimeUnit.SECONDS);
+        assertEquals(2, api.fetches.get());
+    }
+
+    @Test
+    public void pullingTheLibraryGetsServerChangesAndKeepsTheCurrentFilter() throws Exception {
+        api.name = "Old";
+        context.getSharedPreferences("library", 0)
+                .edit()
+                .putString("source", "mega")
+                .putString("mega_account", "Owner")
+                .putLong("mega_root", 123)
+                .putString("mega_name", "Comics")
+                .commit();
+        try (ActivityController<MainActivity> main =
+                Robolectric.buildActivity(MainActivity.class).setup().visible()) {
+            PullRefreshTest.drain(main.get());
+            assertEquals(
+                    "Old",
+                    MegaLibrary.get(context).snapshot("Owner", 123).entries().get(0).node().name());
+            ReflectionHelpers.callInstanceMethod(
+                    main.get(), "showLibrary", ReflectionHelpers.ClassParameter.from(int.class, 1));
+            PullRefreshTest.layout(main.get().getWindow().getDecorView());
+            api.nextName = "New";
+            PullRefreshTest.swipe(
+                    PullRefreshTest.pull(main.get().getWindow().getDecorView()), 0, 240);
+            PullRefreshTest.drain(main.get());
+            assertEquals(1, api.fetches.get());
+            assertEquals(
+                    "New",
+                    MegaLibrary.get(context).snapshot("Owner", 123).entries().get(0).node().name());
+            assertEquals(
+                    1, ReflectionHelpers.<Integer>getField(main.get(), "selection").intValue());
+            assertEquals(
+                    123L, ReflectionHelpers.<Long>getField(main.get(), "megaFolder").longValue());
+        }
+    }
+
+    @Test
+    public void anEmptyPickerRefreshesAndSavesTheUpdatedListing() throws Exception {
+        try (ActivityController<MainActivity> main =
+                Robolectric.buildActivity(MainActivity.class).setup().visible()) {
+            PullRefreshTest.drain(main.get());
+            main.get()
+                    .showMegaFolderPicker(
+                            client,
+                            123,
+                            "Comics",
+                            new ArrayDeque<>(),
+                            new MainActivity.FolderListing("Owner", List.of()));
+            AlertDialog original = (AlertDialog) ShadowDialog.getLatestDialog();
+            PullRefreshTest.layout(original.getWindow().getDecorView());
+            assertEquals(0, original.getListView().getAdapter().getCount());
+            api.nextName = "New";
+            PullRefreshTest.swipe(
+                    PullRefreshTest.pull(original.getWindow().getDecorView()), 0, 240);
+            PullRefreshTest.drain(main.get());
+            assertEquals(1, api.fetches.get());
+            assertFalse(original.isShowing());
+            AlertDialog updated = (AlertDialog) ShadowDialog.getLatestDialog();
+            assertEquals("New", updated.getListView().getAdapter().getItem(0));
+            updated.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            PullRefreshTest.drain(main.get());
+            assertEquals(
+                    "New",
+                    MegaLibrary.get(context).snapshot("Owner", 123).entries().get(0).node().name());
+        }
     }
 
     @Test

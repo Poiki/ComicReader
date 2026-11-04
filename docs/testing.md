@@ -8,7 +8,8 @@ Use JDK 21 and the prepared official MEGA SDK. See [building](building.md) for p
 | --- | --- |
 | JVM tests | 39 tests covering file identity, progress validation/conflicts, Drive requests, WebDAV parsing and bounds, transfer files, release metadata and RAR decoding |
 | Android framework JVM tests | 3 Robolectric/native-graphics tests for painted icon centers/size, real library/reader/settings layouts, expanded overflow touch targets and reader glyph alignment across eight configurations |
-| MEGA lifecycle JVM tests | 9 Robolectric tests using SDK protocol doubles for folder recovery, bounded retries, visible-library session retention, idle cleanup, explicit sign-out and cached-list error presentation |
+| MEGA lifecycle JVM tests | 12 Robolectric tests using SDK protocol doubles for folder recovery, bounded retries, visible-library session retention, idle cleanup, explicit sign-out, cached-list error presentation and explicit refresh |
+| Pull-to-refresh JVM tests | 7 Robolectric tests for empty/local lists, scroll and busy guards, new Drive/WebDAV entries and failure retention |
 | Android smoke runner | 19 groups covering library/reader behavior, first cloud download without a prior local import, MEGA metadata, filters/themes, cloud JSON, updater verification, cover caching/cancellation/budget, repeated startup checks and bilingual UI |
 | Optional native checks | MEGA JNI loading, writable SDK cache and bounded remote callback behavior without real account credentials |
 | Android lint | Run on the debug variant; warnings are reviewed rather than suppressed globally |
@@ -66,3 +67,9 @@ Robolectric is a test-only dependency. The first test run downloads its Android 
 All 51 JVM tests pass. Five regression tests first failed against the previous implementation: missing SDK folders were not reloaded, idle cleanup waited on an unfinished request, background cleanup disconnected a resumed library, and automatic refresh failures opened a modal over cached entries. The corrected tests exercise the actual `MegaClient` and `MainActivity` with SDK protocol doubles and Android framework views/databases. Additional cases cover root-folder recovery, valid-tree reuse, a single initial fetch, interruption and explicit sign-out while browsing.
 
 The tests retain the cached folder after failure, expose a localized inline error and retry action, and verify that an explicit retry still opens its error dialog. A truly unavailable folder remains a failure after one tree fetch. The SDK constructor is shadowed for these tests; no native MEGA account login or live folder lookup is established by them. The existing 24 layout renders and build checks pass; instrumented device tests remain unrun for this release.
+
+## 0.7.3 pull-to-refresh validation
+
+All 61 JVM tests pass: 39 core, 3 layout, 12 MEGA lifecycle and 7 pull-to-refresh tests. Motion-event sequences exercise empty lists, new local entries, horizontal movement, scrolling away from the top and busy-operation rejection. Drive uses intercepted HTTP, WebDAV uses a protocol double, and MEGA uses its existing SDK doubles. Tests verify that a failed Drive refresh retains the old list and stops the indicator, a subsequent success shows new entries, an empty MEGA picker can refresh and save its updated listing, and the library retains its current folder/filter while fetching new MEGA data exactly once.
+
+Robolectric does not deliver the refresh circle's View-animation completion callback; the gesture helper completes that callback explicitly after dispatching the real down/move/up events. These tests establish application wiring and state handling, not physical touch/animation timing. Two additional native framework renders cover empty and populated provider dialogs. Existing 24 library/reader/settings renders and the instrumented build remain covered; the Android instrumentation suite and live providers still require device testing.

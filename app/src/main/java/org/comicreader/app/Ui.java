@@ -7,8 +7,39 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.*;
 import android.widget.*;
 
+import androidx.core.view.ViewCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
 final class Ui {
     static final int ACCENT = 0xff00b0f0;
+
+    static SwipeRefreshLayout refreshable(Activity activity, AbsListView list, String message) {
+        FrameLayout body = new FrameLayout(activity);
+        TextView empty = text(activity, message, 16);
+        empty.setTextColor(secondary(activity));
+        empty.setGravity(Gravity.CENTER);
+        empty.setPadding(dp(activity, 24), 0, dp(activity, 24), 0);
+        body.addView(list, new FrameLayout.LayoutParams(-1, -1));
+        body.addView(empty, new FrameLayout.LayoutParams(-1, -1));
+        list.setEmptyView(empty);
+        SwipeRefreshLayout pull = new SwipeRefreshLayout(activity);
+        pull.setColorSchemeColors(accent(activity));
+        pull.setProgressBackgroundColorSchemeColor(surface(activity));
+        pull.setOnChildScrollUpCallback((parent, child) -> list.canScrollList(-1));
+        pull.addView(body, new ViewGroup.LayoutParams(-1, -1));
+        return pull;
+    }
+
+    static void onRefresh(SwipeRefreshLayout pull, Runnable action) {
+        pull.setOnRefreshListener(action::run);
+        ViewCompat.addAccessibilityAction(
+                pull,
+                pull.getContext().getString(R.string.ui_refresh_library),
+                (view, arguments) -> {
+                    action.run();
+                    return true;
+                });
+    }
 
     static int accent(Activity activity) {
         return switch (activity.getSharedPreferences("appearance", 0).getString("accent", "blue")) {
