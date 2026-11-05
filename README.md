@@ -26,7 +26,7 @@ Native UI renders with project-generated sample comics. Light, dark and OLED the
 | **Cloud access** | Direct MEGA login, Google Drive and HTTPS WebDAV. Download comics for offline reading. |
 | **Reader controls** | Pinch and double-tap zoom, page fit, manga direction, bookmarks, brightness and volume-key navigation. |
 | **Keep reading** | Saved progress, an optional resume-on-launch screen and the next unread issue in the same numbered series and folder. |
-| **Home-screen widgets** | Continue reading, Next issue and Reading shelf. Resize to show more covers and progress. |
+| **Home-screen widgets** | Continue reading, Reading & next, and Reading shelf. Unfinished comics come first; resize to show more covers and progress. |
 | **Make it yours** | Light, dark and OLED themes, three accent colors, and English or Spanish. |
 | **Background work** | Cached covers, network and battery constraints, and separate mobile-data preferences for covers and comic downloads. |
 | **Progress sync** | Optional sync through one selected provider, plus progress export and import. Comic files are not synced. |

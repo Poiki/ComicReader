@@ -1,0 +1,1 @@
+The Next issue widget is now Reading & next: unfinished comics appear first, followed by upcoming issues. Both wide and tall widgets keep active readings visible, including cached cloud entries. Background cover preparation no longer postpones pending refreshes. This build excludes Google Play Services, Google Drive and the GitHub APK updater.

@@ -10,7 +10,7 @@ Use JDK 21 and the prepared MEGA and archive native libraries. See [building](bu
 | Android framework JVM tests | 3 Robolectric/native-graphics tests for painted icon centers/size, real library/reader/settings layouts, expanded overflow touch targets and reader glyph alignment across eight configurations |
 | MEGA lifecycle JVM tests | 12 Robolectric tests using SDK protocol doubles for folder recovery, bounded retries, visible-library session retention, idle cleanup, explicit sign-out, cached-list error presentation and explicit refresh |
 | Pull-to-refresh JVM tests | 7 Robolectric tests for empty/local lists, scroll and busy guards, new Drive/WebDAV entries and failure retention |
-| Widgets and series JVM tests | 26 tests covering numbering, source/cache identity, responsive RemoteViews, bitmap/IPC budgets, reader completion and cloud continuation |
+| Widgets and series JVM tests | 28 tests covering numbering, source/cache identity, responsive RemoteViews, bitmap/IPC budgets, reader completion and cloud continuation |
 | Android smoke runner | 19 groups covering library/reader behavior, first cloud download without a prior local import, MEGA metadata, filters/themes, cloud JSON, updater verification, cover caching/cancellation/budget, repeated startup checks and bilingual UI |
 | Optional native checks | MEGA JNI loading, writable SDK cache and bounded remote callback behavior without real account credentials |
 | Android lint | Run on the debug variant; warnings are reviewed rather than suppressed globally |
@@ -96,3 +96,9 @@ Support tests check that Ko-fi opens only after an explicit positive-button tap,
 ## 0.9.1 compact widget validation
 
 The smallest 140 × 140 dp widget previously selected both unfinished comics but displayed only one card. The new regression first failed on that display count. It checks two visible cards, last-opened ordering, completed-comic exclusion, separate reading intents and layout bounds at normal and 1.7x font scale on API 28 and 34 under Robolectric. The short-card fallback also fits API 28 without Android 12 layout-sizing calls. Existing responsive size/theme, Spanish large-text, cover memory and IPC budget checks remain in place. Physical Android launchers remain unverified.
+
+## 0.9.2 reading queue validation
+
+The former Next issue widget selected upcoming issues only, so it omitted unfinished comics even when its layout had room. The queue test now expects unfinished comics before their next issues; it failed against the previous selection rule. A separate regression first confirmed that another cover-change event postponed a pending refresh, leaving the second reading absent. Fixed-deadline coalescing now lets the update run while further cover events arrive.
+
+Framework checks on API 28 and 34 cover 280 × 160 dp and 280 × 320 dp layouts, two readings from separate cached MEGA folders, retained progress after removing one local copy, canceled foreground updates, a subsequent completion refresh and ordered next issues. These use saved metadata and synthetic comics, without a cloud connection. Physical launchers and real cloud-account transfers remain unverified.

@@ -87,7 +87,11 @@ public final class ReadingShelfTest {
         library.update(two.id(), 1, false, false, new int[0]);
         List<ReadingShelf.Item> items = ReadingShelf.get(context).items();
         assertEquals(two, ReadingShelf.select(items, "continue", two.id()).get(0).book());
-        assertEquals(three, ReadingShelf.select(items, "next", two.id()).get(0).book());
+        assertEquals(
+                List.of(two, three),
+                ReadingShelf.select(items, "next", two.id()).stream()
+                        .map(ReadingShelf.Item::book)
+                        .toList());
         assertEquals(2, ReadingShelf.select(items, "shelf", two.id()).size());
     }
 

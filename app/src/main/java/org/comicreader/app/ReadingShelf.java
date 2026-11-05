@@ -284,14 +284,13 @@ final class ReadingShelf extends SQLiteOpenHelper {
                                                                 : item.progress.revision)
                                         .reversed()));
         LinkedHashMap<String, Item> result = new LinkedHashMap<>();
-        if (!mode.equals("next"))
-            for (Item item : recent) {
-                if (!item.completed
-                        && item.progress != null
-                        && (item.progress.page > 0 || item.progress.id.equals(last)))
-                    result.putIfAbsent(item.identity(), item);
-                if (result.size() >= 9) break;
-            }
+        for (Item item : recent) {
+            if (!item.completed
+                    && item.progress != null
+                    && (item.progress.page > 0 || item.progress.id.equals(last)))
+                result.putIfAbsent(item.identity(), item);
+            if (result.size() >= 9) break;
+        }
         if (!mode.equals("continue") && result.size() < 9) {
             Map<String, List<Item>> groups = new HashMap<>();
             for (Item item : items) {

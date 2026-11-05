@@ -41,16 +41,24 @@ public class ComicWidget extends AppWidgetProvider {
                                                             .length
                                                     != 0);
         if (!installed) return;
-        if (pending != null) MAIN.removeCallbacks(pending);
-        if (foreground != 0) return;
-        pending = () -> app.sendBroadcast(new Intent(app, Continue.class).setAction(REFRESH));
+        if (foreground != 0 || pending != null) return;
+        pending =
+                () -> {
+                    synchronized (ComicWidget.class) {
+                        pending = null;
+                    }
+                    app.sendBroadcast(new Intent(app, Continue.class).setAction(REFRESH));
+                };
         MAIN.postDelayed(pending, 1500);
     }
 
     static synchronized void foreground(Context context, boolean visible) {
         foreground += visible ? 1 : -1;
         if (foreground < 0) throw new IllegalStateException("Unbalanced widget lifecycle");
-        if (visible && pending != null) MAIN.removeCallbacks(pending);
+        if (visible && pending != null) {
+            MAIN.removeCallbacks(pending);
+            pending = null;
+        }
         if (foreground == 0) changed(context);
     }
 

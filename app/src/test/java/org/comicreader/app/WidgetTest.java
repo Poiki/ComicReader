@@ -51,6 +51,11 @@ public final class WidgetTest {
 
     static void reset(Context context) throws Exception {
         drain();
+        Runnable pending = ReflectionHelpers.getStaticField(ComicWidget.class, "pending");
+        if (pending != null)
+            ReflectionHelpers.<Handler>getStaticField(ComicWidget.class, "MAIN")
+                    .removeCallbacks(pending);
+        ReflectionHelpers.setStaticField(ComicWidget.class, "pending", null);
         for (Class<?> type : List.of(Library.class, ReadingShelf.class, MegaLibrary.class)) {
             android.database.sqlite.SQLiteOpenHelper helper =
                     ReflectionHelpers.getStaticField(type, "instance");
@@ -343,6 +348,130 @@ public final class WidgetTest {
             }
             bitmap.recycle();
         }
+    }
+
+    @Test
+    @Config(sdk = {28, 34})
+    public void wideAndTallWidgetsPrioritizeBothReadingsAndRefreshDuringCoverUpdates()
+            throws Exception {
+        Library library = Library.get(context);
+        Library.Book first = comic(context, "Nova #001.cbz", 1),
+                second = comic(context, "Orbit #001.cbz", 2),
+                nextFirst = comic(context, "Nova #002.cbz", 3),
+                nextSecond = comic(context, "Orbit #002.cbz", 4);
+        library.update(first.id(), 1, false, false, new int[0]);
+        context.getSharedPreferences("mega", 0).edit().putBoolean("connected", true).commit();
+        context.getSharedPreferences("library", 0)
+                .edit()
+                .putString("mega_account", "Owner")
+                .commit();
+        MegaLibrary catalog = MegaLibrary.get(context);
+        catalog.replace(
+                "Owner",
+                1,
+                "Nova",
+                List.of(
+                        new MegaClient.Node(11, first.title(), false, first.size()),
+                        new MegaClient.Node(12, nextFirst.title(), false, nextFirst.size())));
+        catalog.replace(
+                "Owner",
+                2,
+                "Orbit",
+                List.of(
+                        new MegaClient.Node(21, second.title(), false, second.size()),
+                        new MegaClient.Node(22, nextSecond.title(), false, nextSecond.size())));
+        catalog.link(context, "Owner", 11, first);
+        catalog.link(context, "Owner", 12, nextFirst);
+        catalog.link(context, "Owner", 21, second);
+        catalog.link(context, "Owner", 22, nextSecond);
+        library.remove(first);
+        context.getSharedPreferences("reader", 0)
+                .edit()
+                .putString("last_book", first.id())
+                .commit();
+        AppWidgetManager manager = AppWidgetManager.getInstance(context);
+        Map<String, Integer> widgets = new LinkedHashMap<>();
+        for (Class<? extends ComicWidget> type :
+                List.of(
+                        ComicWidget.Continue.class,
+                        ComicWidget.Shelf.class,
+                        ComicWidget.Next.class)) {
+            int id = shadowOf(manager).createWidget(type, R.layout.widget_shelf);
+            widgets.put(
+                    type == ComicWidget.Continue.class
+                            ? "continue"
+                            : type == ComicWidget.Shelf.class ? "shelf" : "next",
+                    id);
+        }
+        drain();
+        ComicWidget.changed(context);
+        ComicWidget.foreground(context, true);
+        library.update(second.id(), 1, false, false, new int[0]);
+        context.getSharedPreferences("reader", 0)
+                .edit()
+                .putString("last_book", second.id())
+                .commit();
+        ComicWidget.foreground(context, false);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(1000));
+        ComicWidget.changed(context);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(600));
+        drain();
+        for (var widget : widgets.entrySet()) {
+            View root = shadowOf(manager).getViewFor(widget.getValue());
+            List<String> titles =
+                    descendants(root, R.id.widget_item_title).stream()
+                            .filter(
+                                    view ->
+                                            ((View) view.getParent()).getVisibility()
+                                                    == View.VISIBLE)
+                            .map(view -> ((TextView) view).getText().toString())
+                            .toList();
+            assertTrue(
+                    "Both unfinished comics are visible in " + widget.getKey(), titles.size() >= 2);
+            assertEquals(List.of(second.title(), first.title()), titles.subList(0, 2));
+            for (int[] size : new int[][] {{280, 160}, {280, 320}}) {
+                View sized =
+                        apply(
+                                ComicWidget.render(
+                                        context,
+                                        widget.getKey(),
+                                        ReadingShelf.select(
+                                                ReadingShelf.get(context).items(),
+                                                widget.getKey(),
+                                                second.id()),
+                                        size[0],
+                                        size[1],
+                                        new HashMap<>()),
+                                size[0],
+                                size[1]);
+                List<String> visible =
+                        descendants(sized, R.id.widget_item_title).stream()
+                                .filter(
+                                        view ->
+                                                ((View) view.getParent()).getVisibility()
+                                                        == View.VISIBLE)
+                                .map(view -> ((TextView) view).getText().toString())
+                                .toList();
+                List<String> expected = new ArrayList<>(List.of(second.title(), first.title()));
+                if (!widget.getKey().equals("continue")) {
+                    expected.add(nextSecond.title());
+                    if (size[1] >= 320) expected.add(nextFirst.title());
+                }
+                assertEquals(expected, visible);
+            }
+        }
+        library.update(second.id(), 2, true, false, new int[0]);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(1600));
+        drain();
+        List<View> remaining =
+                descendants(
+                                shadowOf(manager).getViewFor(widgets.get("continue")),
+                                R.id.widget_item_title)
+                        .stream()
+                        .filter(view -> ((View) view.getParent()).getVisibility() == View.VISIBLE)
+                        .toList();
+        assertEquals(1, remaining.size());
+        assertEquals(first.title(), ((TextView) remaining.get(0)).getText().toString());
     }
 
     @Test
