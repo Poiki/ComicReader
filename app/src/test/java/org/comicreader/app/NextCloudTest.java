@@ -115,6 +115,7 @@ public final class NextCloudTest {
                         current.size());
         ReadingShelf.get(context).link(current, location);
         context.getSharedPreferences("drive", 0).edit().putString("account", "Owner").commit();
+        library.remove(current);
         ConnectivityManager network = context.getSystemService(ConnectivityManager.class);
         shadowOf(network)
                 .setActiveNetworkInfo(

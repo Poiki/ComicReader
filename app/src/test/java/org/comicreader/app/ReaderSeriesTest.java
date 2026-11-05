@@ -70,6 +70,106 @@ public final class ReaderSeriesTest {
         assertTrue(Library.get(context).state(first.id()).completed);
         assertEquals(2, Library.get(context).state(first.id()).page);
         assertEquals(next.id(), shadowOf(activity).getNextStartedActivity().getStringExtra("id"));
+        assertFalse(
+                context.getSharedPreferences("downloads", 0).getBoolean("delete_finished", false));
+        java.util.concurrent.ThreadPoolExecutor worker =
+                ReflectionHelpers.getField(activity, "worker");
+        reader.close();
+        reader = null;
+        assertTrue(worker.awaitTermination(3, TimeUnit.SECONDS));
+        assertTrue(Library.get(context).file(first).isFile());
+    }
+
+    @Test
+    public void cleanupSettingStartsOffAndRetainsTheExplicitChoice() throws Exception {
+        try (ActivityController<MainActivity> main =
+                Robolectric.buildActivity(MainActivity.class).setup().visible()) {
+            ReflectionHelpers.callInstanceMethod(main.get(), "more");
+            android.app.Dialog dialog = ShadowDialog.getLatestDialog();
+            LinearLayout row =
+                    dialog.getWindow()
+                            .getDecorView()
+                            .findViewWithTag(main.get().getString(R.string.delete_finished));
+            Switch toggle = (Switch) row.getChildAt(0);
+            assertFalse(toggle.isChecked());
+            toggle.setChecked(true);
+            assertTrue(
+                    context.getSharedPreferences("downloads", 0)
+                            .getBoolean("delete_finished", false));
+            dialog.dismiss();
+            ReflectionHelpers.callInstanceMethod(main.get(), "more");
+            dialog = ShadowDialog.getLatestDialog();
+            row =
+                    dialog.getWindow()
+                            .getDecorView()
+                            .findViewWithTag(main.get().getString(R.string.delete_finished));
+            assertTrue(((Switch) row.getChildAt(0)).isChecked());
+            dialog.dismiss();
+        }
+    }
+
+    @Test
+    public void enabledCleanupRemovesTheClosedPrivateCopyAndKeepsProgressAndOriginal()
+            throws Exception {
+        Library library = Library.get(context);
+        Library.Book book = WidgetTest.comic(context, "Standalone.cbz", 1);
+        java.io.File original = new java.io.File(context.getCacheDir(), "original.cbz");
+        java.nio.file.Files.copy(
+                library.file(book).toPath(),
+                original.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        byte[] originalBytes = java.nio.file.Files.readAllBytes(original.toPath());
+        context.getSharedPreferences("downloads", 0)
+                .edit()
+                .putBoolean("delete_finished", true)
+                .commit();
+        library.update(book.id(), 2, false, true, new int[] {1});
+        ReaderActivity activity = open(book);
+        activity.advance(1);
+        WidgetTest.waitFor(activity::isFinishing);
+        java.util.concurrent.ThreadPoolExecutor worker =
+                ReflectionHelpers.getField(activity, "worker");
+        reader.close();
+        reader = null;
+        assertTrue(worker.awaitTermination(3, TimeUnit.SECONDS));
+        assertNull(library.book(book.id()));
+        assertFalse(library.file(book).exists());
+        assertTrue(library.state(book.id()).completed);
+        assertTrue(library.state(book.id()).favorite);
+        assertArrayEquals(new int[] {1}, library.state(book.id()).bookmarks());
+        assertArrayEquals(originalBytes, java.nio.file.Files.readAllBytes(original.toPath()));
+    }
+
+    @Test
+    public void cleanupKeepsTheNextComicAndDoesNotRemoveAnUnfinishedCopy() throws Exception {
+        Library library = Library.get(context);
+        Library.Book first = WidgetTest.comic(context, "Nova #001.cbz", 1),
+                next = WidgetTest.comic(context, "Nova #002.cbz", 2);
+        context.getSharedPreferences("downloads", 0)
+                .edit()
+                .putBoolean("delete_finished", true)
+                .commit();
+        library.update(first.id(), 2, false, false, new int[0]);
+        ReaderActivity activity = open(first);
+        assertFalse(library.state(first.id()).completed);
+        assertTrue(library.file(first).isFile());
+        activity.advance(1);
+        WidgetTest.waitFor(() -> shadowOf(activity).peekNextStartedActivity() != null);
+        assertEquals(next.id(), shadowOf(activity).getNextStartedActivity().getStringExtra("id"));
+        java.util.concurrent.ThreadPoolExecutor worker =
+                ReflectionHelpers.getField(activity, "worker");
+        reader.close();
+        reader = null;
+        assertTrue(worker.awaitTermination(3, TimeUnit.SECONDS));
+        assertFalse(library.file(first).exists());
+        assertTrue(library.file(next).isFile());
+        ReaderActivity unfinished = open(next);
+        worker = ReflectionHelpers.getField(unfinished, "worker");
+        reader.close();
+        reader = null;
+        assertTrue(worker.awaitTermination(3, TimeUnit.SECONDS));
+        assertTrue(library.file(next).isFile());
+        assertFalse(library.state(next.id()).completed);
     }
 
     @Test
@@ -130,6 +230,10 @@ public final class ReaderSeriesTest {
 
     @Test
     public void aFailedProgressCommitKeepsTheCurrentReaderAndReportsTheError() throws Exception {
+        context.getSharedPreferences("downloads", 0)
+                .edit()
+                .putBoolean("delete_finished", true)
+                .commit();
         Library.Book first = WidgetTest.comic(context, "Nova #001.cbz", 1);
         WidgetTest.comic(context, "Nova #002.cbz", 2);
         Library library = Library.get(context);
@@ -142,6 +246,7 @@ public final class ReaderSeriesTest {
         assertNotNull(ShadowDialog.getLatestDialog());
         assertTrue(ShadowDialog.getLatestDialog().isShowing());
         assertTrue(ReflectionHelpers.getField(activity, "dirty"));
+        assertTrue(library.file(first).isFile());
     }
 
     @Test

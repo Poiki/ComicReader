@@ -44,6 +44,7 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
     private boolean dirty, controls = true, ready, sourceReady, pageDirty, completionDirty;
     private boolean trackingSeek;
     private boolean advancingComic;
+    private boolean deleteAfterReading;
     private int renderedWidth, renderedHeight;
     private final TreeSet<Integer> bookmarks = new TreeSet<>();
     private final TreeSet<Integer> addedMarks = new TreeSet<>(), removedMarks = new TreeSet<>();
@@ -588,6 +589,11 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                                                 () -> {
                                                     advancingComic = false;
                                                     if (!active || isDestroyed()) return;
+                                                    deleteAfterReading =
+                                                            getSharedPreferences("downloads", 0)
+                                                                    .getBoolean(
+                                                                            "delete_finished",
+                                                                            false);
                                                     if (next != null && next.book() != null) {
                                                         startActivity(
                                                                 ReadingShelf.open(this, next));
@@ -611,11 +617,13 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                                                                                 current.location()
                                                                                         .key()));
                                                         finish();
-                                                    } else
+                                                    } else {
                                                         Ui.toast(
                                                                 this,
                                                                 getString(
                                                                         R.string.series_finished));
+                                                        if (deleteAfterReading) finish();
+                                                    }
                                                 });
                                     } catch (Exception error) {
                                         runOnUiThread(
@@ -886,12 +894,21 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
         worker.execute(
                 () -> {
                     cache.evictAll();
-                    if (source != null)
-                        try {
-                            source.close();
-                        } catch (IOException e) {
-                            android.util.Log.e("ComicReader", "Could not close the comic", e);
-                        }
+                    try {
+                        if (source != null) source.close();
+                        if (deleteAfterReading) Library.get(this).remove(book);
+                    } catch (Exception e) {
+                        android.util.Log.e("ComicReader", "Could not close or remove the comic", e);
+                        if (deleteAfterReading)
+                            handler.post(
+                                    () ->
+                                            Toast.makeText(
+                                                            getApplicationContext(),
+                                                            getString(
+                                                                    R.string.delete_finished_error),
+                                                            Toast.LENGTH_LONG)
+                                                    .show());
+                    }
                 });
         worker.shutdown();
         super.onDestroy();

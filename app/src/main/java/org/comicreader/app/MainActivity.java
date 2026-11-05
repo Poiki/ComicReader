@@ -1532,6 +1532,25 @@ public final class MainActivity extends Activity {
                             default -> R.string.covers_wifi;
                         }),
                 this::coverSettings);
+        settingsDivider(group);
+        LinearLayout cleanupRow = new LinearLayout(this);
+        cleanupRow.setOrientation(LinearLayout.VERTICAL);
+        cleanupRow.setTag(getString(R.string.delete_finished));
+        settingsToggle(
+                cleanupRow,
+                R.drawable.icon_download,
+                R.string.delete_finished,
+                getSharedPreferences("downloads", 0).getBoolean("delete_finished", false),
+                checked ->
+                        getSharedPreferences("downloads", 0)
+                                .edit()
+                                .putBoolean("delete_finished", checked)
+                                .apply());
+        TextView cleanupHint = Ui.text(this, getString(R.string.delete_finished_hint), 12);
+        cleanupHint.setTextColor(Ui.secondary(this));
+        cleanupHint.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 12), Ui.dp(this, 12));
+        cleanupRow.addView(cleanupHint);
+        group.addView(cleanupRow);
         settingsRow(
                 group,
                 dialog,

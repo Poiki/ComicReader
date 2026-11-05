@@ -1,0 +1,1 @@
+Optional Delete local copy after finishing setting, off by default. Advancing past the final page saves progress and removes the private copy after closing the reader. Original files, cloud files, progress and bookmarks are kept. Next-issue lookup also works after removing the preceding local copy. This build excludes Google Play Services, Google Drive and the GitHub APK updater.

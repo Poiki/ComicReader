@@ -256,9 +256,7 @@ final class ReadingShelf extends SQLiteOpenHelper {
     Item current(String bookId, String key) {
         if (key == null) key = origin(bookId);
         List<Item> matching =
-                items().stream()
-                        .filter(item -> item.book != null && item.book.id().equals(bookId))
-                        .toList();
+                items().stream().filter(item -> item.identity().equals(bookId)).toList();
         if (key != null)
             for (Item item : matching) if (item.location.key().equals(key)) return item;
         return matching.size() == 1 ? matching.get(0) : null;

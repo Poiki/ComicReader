@@ -24,6 +24,9 @@
     <string name="covers_info">"Cómo funciona"</string>
     <string name="covers_wifi">"Wi-Fi / redes sin límite"</string>
     <string name="delete_local_copy_message">"Se eliminará solo la copia privada. Conservaremos el progreso y el archivo original."</string>
+    <string name="delete_finished">Borrar copia local al terminar</string>
+    <string name="delete_finished_hint">Al avanzar después de la última página, elimina la copia privada. Conserva el progreso y los archivos originales del dispositivo o de la nube.</string>
+    <string name="delete_finished_error">No se ha podido borrar la copia local. Tu progreso está guardado.</string>
     <string name="download_name_prefix">"Descargando "</string>
     <string name="download_network_changed">"La descarga se ha detenido porque ha cambiado la conexión. Conéctate a Wi-Fi o permite los datos móviles y vuelve a intentarlo."</string>
     <string name="download_network_required">"Conéctate a una red Wi-Fi o sin límite. Para descargar cómics con datos móviles, activa el permiso en Descargas de cómics."</string>

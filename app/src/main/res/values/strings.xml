@@ -24,6 +24,9 @@
     <string name="covers_info">"How it works"</string>
     <string name="covers_wifi">"Wi-Fi / unmetered networks"</string>
     <string name="delete_local_copy_message">"Only the private copy will be deleted. Progress and the original file will be kept."</string>
+    <string name="delete_finished">Delete local copy after finishing</string>
+    <string name="delete_finished_hint">After advancing past the final page, remove the private copy. Reading progress and original files on your device or in the cloud are kept.</string>
+    <string name="delete_finished_error">Could not remove the local copy. Your reading progress is saved.</string>
     <string name="download_name_prefix">"Downloading "</string>
     <string name="download_network_changed">"Download stopped because the connection changed. Reconnect to Wi-Fi or allow mobile data, then try again."</string>
     <string name="download_network_required">"Connect to Wi-Fi or an unmetered network. To use mobile data for comics, enable it in Comic downloads."</string>

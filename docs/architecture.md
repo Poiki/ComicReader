@@ -20,6 +20,8 @@ UI text is defined in English and Spanish Android resources. `AppLanguage` uses 
 
 Imported files are hashed once with SHA-256, validated and moved or copied into private app storage. The hash identifies progress across providers and duplicate imports. Local comic contents have no additional encryption. Deleting a copy preserves progress and leaves the original external file intact.
 
+Optional cleanup after finishing is disabled by default. Advancing beyond the final page commits reading progress before authorizing removal. Reader teardown closes its archive on the render worker before removing the private copy. Next-issue lookup also accepts retained cloud progress without a local book, preserving continuation after cleanup. Failed saves and unfinished readers never authorize removal; cleanup failures retain the saved progress and report an error.
+
 `Library` owns `library.db`, containing local books, progress records and a logical revision clock. The separate `mega-library.db` caches account-scoped handles, folder listings and content-hash links. A missing MEGA folder triggers one authenticated tree reload before failure. A failed refresh retains the previous listing; automatic checks show a retryable inline status, while explicit refreshes also report errors in a dialog. Choosing a folder stores its root; subfolder browsing fetches only folders the user visits.
 
 ## Reader

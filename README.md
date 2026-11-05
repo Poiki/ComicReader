@@ -53,6 +53,8 @@ Releases currently use the original test signing certificate. Android or Play Pr
 2. Tap a comic to open it. Remote comics download before reading; comic downloads and cover preparation default to Wi-Fi/unmetered networks.
 3. Tap the page edges to turn, or the center to show controls. After the final page, turn forward once more to finish the comic and open the next clear unread number in that series and folder.
 
+To free storage after reading, enable **Settings → Library and downloads → Delete local copy after finishing**. It is off by default. After advancing past the final page, the reader saves progress, closes the archive and removes its private copy; original files and reading progress are kept.
+
 Add widgets from your launcher's widget picker under **ComicReader**. Larger sizes show up to nine comics. Widgets use cached listings and covers; tapping a remote comic downloads it when needed. Open the app to refresh cloud folder contents.
 
 MEGA works with the bundled SDK. Google Drive requires your own OAuth registration and compatible Google Play services. See [cloud setup](docs/cloud-setup.md) and [progress synchronization](docs/synchronization.md).
