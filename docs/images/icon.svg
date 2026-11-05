@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">ComicReader</title>
+  <rect width="48" height="48" rx="10" fill="#121210"/>
+  <path fill="#00b0f0" d="M8 9h14v30H8zM26 9h14v30H26z"/>
+  <path fill="#121210" d="M11 13h8v3h-8zM29 13h8v3h-8zM11 20h8v14h-8zM29 20h8v14h-8z"/>
+</svg>

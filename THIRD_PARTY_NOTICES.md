@@ -24,3 +24,5 @@ Local reading and MEGA do not require a Google account. Drive authorization requ
 The privately supplied reference APK, its decompilation, resources and native libraries are excluded from this repository and the app. ComicReader uses its own implementation and launcher artwork, with the licensed interface icons listed above. The synthetic RAR test fixtures contain only project-authored images; the proprietary RAR archiver used to generate compressed fixtures is not distributed.
 
 Widget picker previews are rendered from the app's native layouts using original synthetic covers drawn by `WidgetTest`. They contain no third-party comic artwork.
+
+README screenshots are native UI renders from `UiScreensTest` with project-generated sample comics. The documentation icon is adapted from the project's launcher artwork. These assets contain no personal library data or third-party comic artwork.
