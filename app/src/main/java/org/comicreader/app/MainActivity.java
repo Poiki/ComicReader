@@ -60,7 +60,7 @@ public final class MainActivity extends Activity {
         Ui.applyTheme(this);
         super.onCreate(saved);
         filters = getResources().getStringArray(R.array.library_filters);
-        updater = new Updater(this);
+        if (BuildConfig.EXTERNAL_UPDATES) updater = new Updater(this);
         Ui.bars(this);
         if (android.os.Build.VERSION.SDK_INT >= 33)
             getOnBackInvokedDispatcher()
@@ -356,12 +356,15 @@ public final class MainActivity extends Activity {
                 "MEGA",
                 getString(R.string.ui_direct_access),
                 this::megaLogin);
-        homeRow(
-                navigation,
-                R.drawable.icon_cloud,
-                "Google Drive",
-                getString(R.string.ui_direct_access),
-                () -> DriveAuth.signIn(this, this::driveConnected, error -> Ui.error(this, error)));
+        if (BuildConfig.GOOGLE_SERVICES)
+            homeRow(
+                    navigation,
+                    R.drawable.icon_cloud,
+                    "Google Drive",
+                    getString(R.string.ui_direct_access),
+                    () ->
+                            DriveAuth.signIn(
+                                    this, this::driveConnected, error -> Ui.error(this, error)));
         addButton();
         navigationBar();
         updateStatus();
@@ -635,13 +638,16 @@ public final class MainActivity extends Activity {
                 0xfff04451,
                 remoteMode && !downloadsOnly && !recent,
                 () -> setSource(true));
-        sourceCard(
-                R.drawable.icon_cloud_filled,
-                "Drive",
-                R.string.source_cloud,
-                0xff16b8a6,
-                false,
-                () -> DriveAuth.signIn(this, this::driveConnected, error -> Ui.error(this, error)));
+        if (BuildConfig.GOOGLE_SERVICES)
+            sourceCard(
+                    R.drawable.icon_cloud_filled,
+                    "Drive",
+                    R.string.source_cloud,
+                    0xff16b8a6,
+                    false,
+                    () ->
+                            DriveAuth.signIn(
+                                    this, this::driveConnected, error -> Ui.error(this, error)));
         sourceCard(
                 R.drawable.icon_server,
                 "WebDAV",
@@ -731,15 +737,17 @@ public final class MainActivity extends Activity {
                     dialog.dismiss();
                     megaLogin();
                 });
-        homeRow(
-                choices,
-                R.drawable.icon_cloud,
-                "Google Drive",
-                null,
-                () -> {
-                    dialog.dismiss();
-                    DriveAuth.signIn(this, this::driveConnected, error -> Ui.error(this, error));
-                });
+        if (BuildConfig.GOOGLE_SERVICES)
+            homeRow(
+                    choices,
+                    R.drawable.icon_cloud,
+                    "Google Drive",
+                    null,
+                    () -> {
+                        dialog.dismiss();
+                        DriveAuth.signIn(
+                                this, this::driveConnected, error -> Ui.error(this, error));
+                    });
         homeRow(
                 choices,
                 R.drawable.icon_cloud,
@@ -867,7 +875,7 @@ public final class MainActivity extends Activity {
         CoverJob.schedule(this, true);
         if (!busy) refresh();
         Cloud.schedule(this);
-        updater.onResume();
+        if (updater != null) updater.onResume();
     }
 
     private void refresh() {
@@ -1612,23 +1620,32 @@ public final class MainActivity extends Activity {
         group =
                 settingsSection(
                         body, R.string.settings_application, R.drawable.icon_settings_filled);
-        settingsToggle(
-                group,
-                R.drawable.icon_sync,
-                R.string.settings_auto_updates,
-                getSharedPreferences("updates", 0).getBoolean("auto", true),
-                checked ->
-                        getSharedPreferences("updates", 0)
-                                .edit()
-                                .putBoolean("auto", checked)
-                                .apply());
+        if (BuildConfig.EXTERNAL_UPDATES) {
+            settingsToggle(
+                    group,
+                    R.drawable.icon_sync,
+                    R.string.settings_auto_updates,
+                    getSharedPreferences("updates", 0).getBoolean("auto", true),
+                    checked ->
+                            getSharedPreferences("updates", 0)
+                                    .edit()
+                                    .putBoolean("auto", checked)
+                                    .apply());
+            settingsRow(
+                    group,
+                    dialog,
+                    R.drawable.icon_download,
+                    R.string.ui_app_updates,
+                    "GitHub Releases",
+                    updater::showSettings);
+        } else group.addView(Ui.text(this, getString(R.string.fdroid_updates), 14));
         settingsRow(
                 group,
                 dialog,
-                R.drawable.icon_download,
-                R.string.ui_app_updates,
-                "GitHub Releases",
-                updater::showSettings);
+                R.drawable.icon_favorite,
+                R.string.support_title,
+                "Ko-fi",
+                () -> Support.show(this));
         settingsRow(
                 group,
                 dialog,
@@ -2021,21 +2038,30 @@ public final class MainActivity extends Activity {
     }
 
     private void cloudMenu() {
+        String[] providers = {
+            getString(R.string.ui_mega_direct_access),
+            getString(R.string.ui_optional_webdav),
+            getString(R.string.ui_disconnect_active_provider)
+        };
+        if (BuildConfig.GOOGLE_SERVICES)
+            providers =
+                    new String[] {
+                        getString(R.string.ui_google_drive_direct_access),
+                        providers[0],
+                        providers[1],
+                        providers[2]
+                    };
         new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.ui_cloud_accounts))
                 .setItems(
-                        new String[] {
-                            getString(R.string.ui_google_drive_direct_access),
-                            getString(R.string.ui_mega_direct_access),
-                            getString(R.string.ui_optional_webdav),
-                            getString(R.string.ui_disconnect_active_provider)
-                        },
+                        providers,
                         (dialog, which) -> {
-                            if (which == 0)
+                            int action = which + (BuildConfig.GOOGLE_SERVICES ? 0 : 1);
+                            if (action == 0)
                                 DriveAuth.signIn(
                                         this, this::driveConnected, error -> Ui.error(this, error));
-                            else if (which == 1) megaLogin();
-                            else if (which == 2) webDavMenu();
+                            else if (action == 1) megaLogin();
+                            else if (action == 2) webDavMenu();
                             else disconnect();
                         })
                 .setNegativeButton(R.string.action_close, null)
@@ -2948,7 +2974,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         if (settingsDialog != null) settingsDialog.dismiss();
-        updater.close();
+        if (updater != null) updater.close();
         covers.close();
         worker.shutdownNow();
         super.onDestroy();
@@ -2960,7 +2986,7 @@ public final class MainActivity extends Activity {
         shelfRefresh.setRefreshing(false);
         if (resumed) MegaClient.instance(this).browsing(false);
         resumed = false;
-        updater.onPause();
+        if (updater != null) updater.onPause();
         covers.setPaused(true);
         if (!busy && !CoverJob.running() && MegaClient.instance(this).loggedIn())
             worker.execute(

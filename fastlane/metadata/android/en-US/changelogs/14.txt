@@ -1,0 +1,1 @@
+Embedded read-only RAR4/RAR5 reader with bounded resources and checksum validation. This build excludes Google Play Services, Google Drive and the GitHub APK updater; MEGA, WebDAV and local reading remain available. Optional Ko-fi support opens in your browser after an explicit tap.

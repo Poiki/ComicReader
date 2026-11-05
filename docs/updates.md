@@ -24,7 +24,7 @@ Android asks for installation permission and confirmation. Play Protect rejected
 
 1. Preserve the original signing key outside Git. A new certificate cannot update existing installations and is rejected by the client.
 2. Update `versionCode` and `versionName` in `app/build.gradle`, then add `docs/releases/vX.Y.Z.md`.
-3. Prepare the MEGA SDK, run the relevant [checks](testing.md), and commit on `main`.
+3. Prepare the MEGA and archive native libraries, run the relevant [checks](testing.md), and commit on `main`.
 4. With JDK 21, Android SDK and authenticated `gh`, run:
 
 ```powershell
@@ -33,6 +33,6 @@ Android asks for installation permission and confirmation. Play Protect rejected
 
 The script defaults to the original local debug keystore. `-KeyStore` can point to a copy of the same key; `COMICREADER_SIGN_PASSWORD` supplies its password. It pins the expected signing certificate rather than generating a replacement.
 
-Publication requires a clean working tree. The script builds, runs unit tests and lint, signs all three APKs, checks the certificate and 16 KiB alignment, creates `SHA256SUMS`, pushes the commit/tag, uploads a draft release, and publishes it as latest only after all assets are present. It does not overwrite tags, force-push or replace an existing release. Local outputs are under `.local/releases/<tag>/`; APKs and signing material stay out of Git.
+Publication requires a clean working tree. The script builds and tests standard and F-Droid variants, signs three APKs for each, checks the certificate and 16 KiB alignment, creates `SHA256SUMS`, pushes the commit/tag, uploads a draft release, and publishes it as latest only after all assets are present. Standard asset names remain unchanged for the updater; Google-free assets use `ComicReader-fdroid-<abi>.apk`. These are upstream builds, not a claim of official F-Droid inclusion. It does not overwrite tags, force-push or replace an existing release. Local outputs are under `.local/releases/<tag>/`; APKs and signing material stay out of Git.
 
 Current releases retain a **test signing certificate**, not a Play Store production identity. Do not publish the private key or place it in a public workflow. Existing release tags and binary assets remain immutable when documentation is edited later.

@@ -23,18 +23,25 @@ try {
     $previousPassword = $env:COMICREADER_SIGN_PASSWORD
     if (!$env:COMICREADER_SIGN_PASSWORD) { $env:COMICREADER_SIGN_PASSWORD = 'android' }
     try {
-        foreach ($abi in @('arm64-v8a', 'x86_64', 'universal')) {
-            $apk = Join-Path $output "ComicReader-$abi.apk"
-            & "$toolsPath/apksigner.bat" sign --ks $KeyStore --ks-pass env:COMICREADER_SIGN_PASSWORD --key-pass env:COMICREADER_SIGN_PASSWORD --out $apk "app/build/outputs/apk/release/app-$abi-release-unsigned.apk"
-            if ($LASTEXITCODE -ne 0) { throw "Could not sign $abi" }
-            $certificate = & "$toolsPath/apksigner.bat" verify --print-certs $apk
-            if ($LASTEXITCODE -ne 0 -or ($certificate -join "`n") -notmatch 'd3eac55f8d81cfd53aff43230f454c126e19099507ce64920dd093c653b984e1') {
-                throw 'The certificate does not match existing installations; publication stopped.'
+        foreach ($distribution in @('standard', 'fdroid')) {
+            if ($distribution -eq 'fdroid') {
+                & ./gradlew.bat -Pdistribution=fdroid :app:testDebugUnitTest :app:assembleRelease :app:lintDebug --console plain
+                if ($LASTEXITCODE -ne 0) { throw 'F-Droid variant build or tests failed.' }
             }
-            & "$toolsPath/zipalign.exe" -c -P 16 4 $apk
-            if ($LASTEXITCODE -ne 0) { throw "Invalid APK alignment: $abi" }
-            $assets += $apk
-            $checksums += (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant() + "  ComicReader-$abi.apk"
+            foreach ($abi in @('arm64-v8a', 'x86_64', 'universal')) {
+                $name = if ($distribution -eq 'fdroid') { "ComicReader-fdroid-$abi.apk" } else { "ComicReader-$abi.apk" }
+                $apk = Join-Path $output $name
+                & "$toolsPath/apksigner.bat" sign --ks $KeyStore --ks-pass env:COMICREADER_SIGN_PASSWORD --key-pass env:COMICREADER_SIGN_PASSWORD --out $apk "app/build/outputs/apk/release/app-$abi-release-unsigned.apk"
+                if ($LASTEXITCODE -ne 0) { throw "Could not sign $abi" }
+                $certificate = & "$toolsPath/apksigner.bat" verify --print-certs $apk
+                if ($LASTEXITCODE -ne 0 -or ($certificate -join "`n") -notmatch 'd3eac55f8d81cfd53aff43230f454c126e19099507ce64920dd093c653b984e1') {
+                    throw 'The certificate does not match existing installations; publication stopped.'
+                }
+                & "$toolsPath/zipalign.exe" -c -P 16 4 $apk
+                if ($LASTEXITCODE -ne 0) { throw "Invalid APK alignment: $abi" }
+                $assets += $apk
+                $checksums += (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant() + "  $name"
+            }
         }
     } finally { $env:COMICREADER_SIGN_PASSWORD = $previousPassword }
     $checksumFile = Join-Path $output 'SHA256SUMS'

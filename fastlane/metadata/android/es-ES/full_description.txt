@@ -1,0 +1,13 @@
+ComicReader es un lector de cómics nativo para móviles y tablets Android.
+
+Lee archivos CBZ, ZIP, CBR, RAR y PDF, importa cómics locales o conecta MEGA y WebDAV mediante HTTPS. Descarga cómics para leer sin conexión y conserva el progreso, los marcadores y los favoritos.
+
+Elige una cuadrícula de portadas o una lista, filtra los cómics leídos y pendientes y desliza hacia abajo para actualizar las carpetas. El lector incluye zoom, ajuste de página, dirección manga, brillo y cambio de página opcional con los botones de volumen. Al avanzar desde la última página, continúa con el siguiente número pendiente de la misma saga y carpeta cuando la numeración es clara.
+
+Tres widgets redimensionables muestran lecturas en curso y próximos números. Incluye temas claro, oscuro y negro OLED, colores de acento, español e inglés.
+
+Esta versión para F-Droid no contiene Google Play Services. El inicio de sesión y la sincronización con Google Drive no están disponibles. MEGA, WebDAV y la lectura local siguen disponibles. F-Droid gestiona las actualizaciones en lugar del instalador de APK de GitHub integrado.
+
+Las portadas en segundo plano y las descargas respetan preferencias separadas para datos móviles. Generar una portada remota puede requerir una descarga temporal del cómic y consumir cuota del proveedor. Los cómics se descargan antes de leerlos; no se admiten archivos RAR cifrados ni de varios volúmenes.
+
+Las donaciones mediante Ko-fi son opcionales y no desbloquean funciones. El enlace de apoyo abre el navegador solo cuando tú lo eliges.

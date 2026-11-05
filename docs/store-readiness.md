@@ -1,6 +1,6 @@
 # Google Play and F-Droid readiness
 
-Reviewed on **2026-11-05** against ComicReader 0.8.0 (version code 13) and the official guidance linked below. This is a publication assessment; neither store has approved or received the app.
+Reviewed on **2026-11-05**, updated for ComicReader 0.9.0 (version code 14). This is a publication assessment; neither store has approved or received the app.
 
 ## Distribution and costs
 
@@ -9,7 +9,7 @@ Selling ComicReader on Google Play and offering a free build through F-Droid are
 | Channel | Payment model | Current status |
 | --- | --- | --- |
 | Google Play | Set an upfront purchase price in Play Console. Developer registration costs US$25 once, plus applicable sales fees and taxes. | Packaging works; policy, signing, account and product work remain. |
-| Official F-Droid repository | Free download, with optional developer donation links. | Blocked by bundled Google authorization and Junrar; build recipe also needed. |
+| Official F-Droid repository | Free download, with optional developer donation links. | A Google-free build with the native libre RAR decoder is implemented. Isolated source-build packaging and maintainer review remain. |
 | GitHub Releases | Existing APK distribution. | Available; retain its current update and signing contract during store preparation. |
 
 Google requires identity verification and, for sales, a payments profile and verified payment information. Monetizing developers must display their full legal address on Google Play. These details belong in the owner's account, not this repository. See [registration](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en), [required account information](https://support.google.com/googleplay/android-developer/answer/13628312?hl=en) and [payments profiles](https://support.google.com/googleplay/android-developer/answer/7161426?hl=en).
@@ -56,14 +56,14 @@ The official repository requires FLOSS application code and dependencies, plus a
 
 | Finding in this repository | Required action |
 | --- | --- |
-| `play-services-auth:22.0.0` and Google classes in `DriveAuth` | Exclude Google binaries from the F-Droid variant. Preserve Drive through a separately validated FLOSS authorization route, or explicitly omit Drive from that variant. Hiding its button does not remove the dependency. |
-| `junrar:8.1.2` under the UnRAR license | Replace the RAR decoder with a FLOSS implementation to preserve CBR/RAR. Removing Junrar without replacement would lose those formats. The existing license restricts use for compression and does not meet the required software freedoms. |
+| Google authorization | Excluded from `-Pdistribution=fdroid`, along with Drive account controls. Its EN/ES About text and listing disclose the omission. The standard build retains Google authorization. |
+| RAR decoder | Junrar has been removed from all builds. The app-owned JNI adapter uses pinned libarchive sources with BSD licensing, source guards and decoder tests. |
 | MEGA native SDK generated into `.local/mega-sdk` | Build the pinned SDK and all required native dependencies from source in the F-Droid recipe. Existing local `.so` files are not a submission recipe. Audit and retain the full native license set. |
 | Docker/PowerShell-oriented native setup | Adapt the Bash build to the F-Droid builder, declare source libraries/tool versions and prepare downloads before the isolated build. Verify that the pinned SDK/NDK/Gradle/AGP/JDK are supported there. |
-| Automatic GitHub checks and APK installation | Exclude this path from the F-Droid variant and let F-Droid update it. Avoid cross-channel signature failures and unsolicited update checks. |
-| No F-Droid metadata | Add localized upstream descriptions, artwork and version-code changelogs, then a tested `fdroiddata` build recipe. |
+| Automatic GitHub checks and APK installation | Excluded from the F-Droid variant, including installer permission/provider. The standard GitHub build retains its update mechanism. |
+| F-Droid metadata | EN/ES descriptions and Ko-fi guidance are prepared. Complete listing artwork/changelogs and a tested `fdroiddata` recipe for the final submission. |
 
-Junrar's restriction is recorded in [third-party notices](../THIRD_PARTY_NOTICES.md) and its bundled license. F-Droid's [published Twig listing](https://f-droid.org/en/packages/com.twig.app/) confirms that its libre build excludes Junrar for this reason. [Libarchive](https://www.libarchive.org/) is a BSD-licensed RAR-reading candidate, not a verified replacement here. Any replacement must pass compressed/solid RAR4/RAR5, corrupt-input, memory-budget, page-order and cancellation tests before promising equivalent support.
+The current decoder passes the stored/compressed RAR4, compressed solid RAR5, natural-order, repeated/backwards-read, checksum, source-immutability, Unicode-path, cancellation and declared-size/split rejection tests. This does not establish compatibility with every archive. See [the embedded reader](archive-reader.md), [third-party notices](../THIRD_PARTY_NOTICES.md) and [testing](testing.md).
 
 MEGA's SDK license is BSD-2-Clause; it is not the same problem as bundled Google authorization. Keep direct MEGA login if its source build and dependencies pass review. MEGA/Drive service integration may still require a `NonFreeNet` declaration, and unsolicited update checks can trigger `Tracking`; classify the final variant with the packagers. See [anti-features](https://f-droid.org/en/docs/Anti-Features/).
 
@@ -74,16 +74,16 @@ Use the [submission guide](https://f-droid.org/en/docs/Submitting_to_F-Droid_Qui
 ## Suggested implementation order
 
 1. Choose the price, developer account type, package IDs, production signing and cross-channel migration strategy.
-2. Add direct-download, Play and F-Droid variants. Remove the external updater from store builds and isolate the Google authorization dependency.
-3. Replace Junrar with a verified FLOSS decoder if CBR/RAR parity is required across stores. Keep MEGA and WebDAV available.
-4. Configure production Drive OAuth; implement a suitable FLOSS authorization flow if Drive must also ship on F-Droid.
+2. Keep the implemented standard/F-Droid separation; add a Play-specific variant without the external updater.
+3. Validate the embedded RAR reader on physical devices and representative archives. Keep MEGA and WebDAV available.
+4. Configure production Drive OAuth for the Google-enabled build. A FLOSS Drive authorization flow is not included in the current F-Droid scope.
 5. Finish privacy disclosures, store listings, artwork and localized metadata using the actual final variant behavior.
 6. Validate a signed Play bundle and the isolated F-Droid build, test real accounts and devices, then complete each store's submission process.
 
 ## Checks performed and limits
 
-- Inspected Gradle dependencies, manifest, Drive scopes, native build scripts, licenses, GitHub updater and signing script. No application behavior or production keys were changed.
-- Built `:app:bundleRelease` successfully: the current unsigned minified AAB is 21,253,887 bytes. This confirms packaging, not store compliance or a successful Play upload.
+- Inspected Gradle dependencies, manifest, Drive scopes, native build scripts, licenses, GitHub updater and signing script. The current variants and decoder are implemented; no production keys were created.
+- The earlier 0.8.0 `:app:bundleRelease` check succeeded (21,253,887 bytes). This was packaging evidence, not Play compliance or an upload of the current version.
 - Current configuration targets API 36, matching the published requirement for new phone/tablet submissions from 2026-08-31. See [target API requirements](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en).
 - Native reports show 16 KiB `LOAD` alignment for both ABIs. Runtime testing on a 16 KiB device and validation of Play-generated APKs remain pending; see [page-size guidance](https://developer.android.com/guide/practices/page-sizes).
-- The previous release passed 85 JVM tests. Store-specific variants, a replacement decoder, real production OAuth, live cloud accounts, Play closed testing and the F-Droid build have not been validated.
+- Current host checks pass 92 standard and 95 F-Droid-variant JVM tests, minified release builds and lint. Static inspection and the resolved runtime dependency graph confirm no GMS/Junrar runtime in the F-Droid APK. Production OAuth, live cloud accounts, physical devices, Play closed testing and the official F-Droid source-build recipe remain unvalidated.

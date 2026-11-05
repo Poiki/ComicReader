@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fdroid_drive_unavailable">Google Drive is unavailable in the F-Droid build, which excludes Google Play Services. Use MEGA, WebDAV or local files.</string>
+    <string name="fdroid_updates">Get updates from the repository you installed this build from.</string>
+</resources>

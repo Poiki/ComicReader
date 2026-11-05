@@ -8,6 +8,7 @@
 | [Architecture](architecture.md) | Source map, threading, storage and resource budgets |
 | [Updates and releases](updates.md) | Update validation, signing and publication |
 | [Store readiness](store-readiness.md) | Paid Google Play distribution, F-Droid requirements and remaining work |
+| [F-Droid variant](fdroid.md) | Google-free build, listing metadata and optional support links |
 | [Testing](testing.md) | Verified behavior, synthetic fixtures and known gaps |
 | [Release notes](releases/) | Changes in each published version |
 

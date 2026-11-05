@@ -1,2 +1,4 @@
 * text=auto eol=lf
+# Patch context must preserve the upstream source's whitespace.
+*.patch -whitespace
 *.bat text eol=crlf

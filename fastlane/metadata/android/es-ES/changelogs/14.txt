@@ -1,0 +1,1 @@
+Lector RAR4/RAR5 integrado de solo lectura, con límites de recursos y verificación de integridad. Esta versión excluye Google Play Services, Google Drive y el actualizador de APK de GitHub; mantiene MEGA, WebDAV y la lectura local. El apoyo opcional mediante Ko-fi abre el navegador solo al pulsarlo.

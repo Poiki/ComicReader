@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_message">CBZ/ZIP, CBR/RAR and PDF. Without ads or analytics.\n\nF-Droid build: no Google Play Services or Google Drive login.\nMEGA: %1$s\nHTTPS WebDAV and local files are available.\n\nCBR must be unencrypted and single-volume. 7z is not supported.</string>
+</resources>

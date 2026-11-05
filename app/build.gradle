@@ -2,6 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
+def distribution = providers.gradleProperty('distribution').getOrElse('standard')
+if (!(distribution in ['standard', 'fdroid'])) {
+    throw new GradleException('distribution must be standard or fdroid')
+}
+def fdroid = distribution == 'fdroid'
+
 android {
     namespace 'org.comicreader.app'
     compileSdk 37
@@ -9,9 +15,21 @@ android {
         applicationId 'org.comicreader.app'
         minSdk 28
         targetSdk 36
-        versionCode 13
-        versionName '0.8.0'
+        versionCode 14
+        versionName '0.9.0'
         testInstrumentationRunner 'org.comicreader.app.SmokeInstrumentation'
+        buildConfigField 'boolean', 'GOOGLE_SERVICES', (!fdroid).toString()
+        buildConfigField 'boolean', 'EXTERNAL_UPDATES', (!fdroid).toString()
+    }
+    buildFeatures { buildConfig = true }
+    sourceSets.main.java.srcDir("src/${distribution}/java")
+    sourceSets.main.jniLibs.srcDir(rootProject.file('.local/archive-native/jniLibs'))
+    if (fdroid) {
+        sourceSets.debug.res.srcDir('src/fdroid/res')
+        sourceSets.release.res.srcDir('src/fdroid/res')
+        sourceSets.debug.manifest.srcFile('src/fdroid/AndroidManifest.xml')
+        sourceSets.release.manifest.srcFile('src/fdroid/AndroidManifest.xml')
+        sourceSets.test.java.srcDir('src/testFdroid/java')
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -22,6 +40,10 @@ android {
     sourceSets.androidTest.assets.srcDir('src/test/resources')
     testOptions {
         unitTests.includeAndroidResources = true
+        unitTests.all {
+            systemProperty 'comicreader.archive.library', rootProject.file(
+                    ".local/archive-native/host/${System.mapLibraryName('comicarchive')}").absolutePath
+        }
     }
     bundle {
         language {
@@ -44,12 +66,31 @@ android {
     }
 }
 
+tasks.register('verifyArchiveSdk') {
+    doLast {
+        ['arm64-v8a', 'x86_64'].each { abi ->
+            def library = rootProject.file(".local/archive-native/jniLibs/${abi}/libcomicarchive.so")
+            if (!library.isFile() || library.length() < 1024)
+                throw new GradleException('Native RAR decoder missing. Run scripts/build-archive-native.ps1.')
+        }
+        def manifest = rootProject.file('.local/archive-native/BUILD-MANIFEST.txt')
+        ['app/src/main/cpp/rar_jni.c', 'app/src/main/cpp/CMakeLists.txt',
+                'scripts/libarchive-memory.patch'].each { path ->
+            def digest = java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(rootProject.file(path).bytes).encodeHex().toString()
+            if (!manifest.isFile() || !manifest.text.contains(digest + ' '))
+                throw new GradleException('Native RAR decoder is stale. Run scripts/build-archive-native.ps1.')
+        }
+    }
+}
+
+tasks.named('preBuild').configure { dependsOn 'verifyArchiveSdk' }
+
 dependencies {
     implementation project(':mega-sdk')
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.2.0'
-    implementation 'com.github.junrar:junrar:8.1.2'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-    implementation 'com.google.android.gms:play-services-auth:22.0.0'
+    if (!fdroid) implementation 'com.google.android.gms:play-services-auth:22.0.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.17'

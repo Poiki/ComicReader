@@ -1,6 +1,6 @@
 # Testing
 
-Use JDK 21 and the prepared official MEGA SDK. See [building](building.md) for prerequisites and commands.
+Use JDK 21 and the prepared MEGA and archive native libraries. See [building](building.md) for prerequisites and commands.
 
 ## Automated coverage
 
@@ -82,3 +82,13 @@ All 85 JVM tests pass. The new suites cover conservative issue matching, numeric
 Reader tests finish the actual synthetic archive and verify that last-page arrival alone does not complete it, progress commits before navigation, different folders do not cross, failed saves retain the reader, and paused activities cannot open another comic. Provider doubles exercise a full Drive next-issue refresh/download/import/open flow, rejection of a changed account, metered-download rejection and a simulated metered handover that interrupts work and unregisters its callback. The archive is closed before import moves its file; these flows run on the Windows host without bypassing the real importer.
 
 The 19-group Android instrumentation suite remains compiled but unrun. Host tests and synthetic provider doubles do not establish launcher behavior on physical Android devices, live account transfers, physical touch timing, energy use or long-session performance. The widget render tests run on API 34; pre-31 resizing uses guarded legacy paths and still needs device testing. Preview images are synthetic native widget renders, not user content.
+
+## 0.9.0 decoder and distribution validation
+
+The standard build passes 92 JVM tests; `-Pdistribution=fdroid` passes 95, including three variant checks. Both compile debug, instrumentation and minified release APKs and pass lint (14 standard warnings, 13 F-Droid warnings, no errors). Ten raw RAR adapter tests use the actual compiled JNI library on the host. They cover stored/compressed RAR4, compressed solid RAR5, natural order, repeated/backwards reads, duplicate/encrypted/split rejection, declared size limits, checksums, unchanged source files, Unicode paths, interruption and closing. One compressed-text fixture is BSD-attributed to libarchive and does not test bitmap rendering.
+
+The original stored-RAR corruption regression initially failed with the native decoder because its final EOF path skipped the CRC comparison. The narrow source patch now checks it; both stored and compressed RAR4 bad-checksum cases fail explicitly. Archive paths are never output destinations. Allocation guards are per buffer/dictionary, not a promise of a 64 MiB total working set.
+
+REA/JADX statically inspected the F-Droid release package (API 28 minimum, target 36, version code 14) and its complete class-name inventory. The package requests only Internet and network-state permissions. Its 498 decompiler class rows contain no GMS, Junrar, SLF4J, Updater or UpdateProvider names; the resolved release dependency graph also excludes these dependency libraries. Obfuscated class-name searches alone are not provenance proof. The native ELF reports show 16 KiB load alignment and system-only dependencies. Signatures are verified separately during release publication.
+
+Support tests check that Ko-fi opens only after an explicit positive-button tap, cancellation opens nothing, and a missing browser shows a localized message. The native OLED dialog render was inspected. App data, credentials, live provider behavior, physical throughput/energy, 16 KiB-device runtime and official F-Droid packaging remain outside these host checks.

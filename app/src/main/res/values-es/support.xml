@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="support_title">Apoya ComicReader</string>
+    <string name="support_message">Ayuda a financiar el desarrollo con una donación opcional. Ko-fi se abre en tu navegador; donar no desbloquea funciones adicionales.</string>
+    <string name="support_open">Abrir Ko-fi</string>
+    <string name="support_no_browser">No hay ningún navegador disponible para abrir Ko-fi.</string>
+</resources>

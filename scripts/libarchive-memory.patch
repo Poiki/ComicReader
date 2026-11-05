@@ -1,0 +1,165 @@
+--- a/libarchive/archive_read_support_format_rar.c
++++ b/libarchive/archive_read_support_format_rar.c
+@@ -973,6 +973,11 @@
+ 
+     case MAIN_HEAD:
+       rar->main_flags = archive_le16dec(p + 3);
++      if (rar->main_flags & MHD_VOLUME) {
++        archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++                          "Multi-volume CBR archives are not supported");
++        return (ARCHIVE_FATAL);
++      }
+       skip = archive_le16dec(p + 5);
+       if ((size_t)skip < 7 + sizeof(rar->reserved1) + sizeof(rar->reserved2)) {
+         archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
+@@ -1400,6 +1405,11 @@
+   p = h;
+   memcpy(&rar_header, p, sizeof(rar_header));
+   rar->file_flags = archive_le16dec(rar_header.flags);
++  if (rar->file_flags & (FHD_SPLIT_BEFORE | FHD_SPLIT_AFTER)) {
++    archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++                      "Multi-volume CBR archives are not supported");
++    return (ARCHIVE_FATAL);
++  }
+   header_size = archive_le16dec(rar_header.size);
+   if (header_size < (int64_t)sizeof(file_header) + 7) {
+     archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
+@@ -1472,10 +1482,7 @@
+     rar->has_encrypted_entries = 1;
+     archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
+                       "RAR encryption support unavailable");
+-    /* Since it is only the data part itself that is encrypted we can at least
+-       extract information about the currently processed entry and don't need
+-       to return ARCHIVE_FATAL here. */
+-    /*return (ARCHIVE_FATAL);*/
++    return (ARCHIVE_FATAL);
+   }
+ 
+   if (rar->file_flags & FHD_LARGE)
+@@ -2374,6 +2381,11 @@
+         return (ARCHIVE_FAILED);
+       }
+ 
++      if (rar->dictionary_size > 64U * 1024U * 1024U) {
++        archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++                          "CBR dictionary exceeds 64 MiB limit");
++        return (ARCHIVE_FATAL);
++      }
+       if (!__archive_ppmd7_functions.Ppmd7_Alloc(&rar->ppmd7_context,
+         rar->dictionary_size))
+       {
+--- a/libarchive/archive_read_support_format_rar5.c
++++ b/libarchive/archive_read_support_format_rar5.c
+@@ -679,6 +679,11 @@
+ 	struct rar5 *rar5 = a->format->data;
+ 	int ret;
+ 
++	if(flt->block_length > 64U * 1024U * 1024U) {
++		archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++		    "CBR filter exceeds 64 MiB limit");
++		return ARCHIVE_FATAL;
++	}
+ 	clear_data_ready_stack(rar5);
+ 	free(rar5->cstate.filtered_buf);
+ 
+@@ -1756,7 +1761,9 @@
+ 				archive_entry_set_is_data_encrypted(e, 1);
+ 				rar5->has_encrypted_entries = 1;
+ 				rar5->cstate.data_encrypted = 1;
+-				/* fallthrough */
++				archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++				    "The CBR is encrypted; use an unencrypted copy");
++				return ARCHIVE_FATAL;
+ 			case EX_SUBDATA:
+ 				/* fallthrough */
+ 			default:
+@@ -2234,6 +2241,11 @@
+ 		return ret;
+ 	}
+ 
++	if(archive_flags & (VOLUME | VOLUME_NUMBER)) {
++		archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++		    "Multi-volume CBR archives are not supported");
++		return ARCHIVE_FATAL;
++	}
+ 	rar5->main.volume = (archive_flags & VOLUME) > 0;
+ 	rar5->main.solid = (archive_flags & SOLID) > 0;
+ 
+@@ -2510,6 +2522,11 @@
+ 	if(ret != ARCHIVE_OK)
+ 		return ret;
+ 
++	if(header_flags & (HFL_SPLIT_BEFORE | HFL_SPLIT_AFTER)) {
++		archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++		    "Multi-volume CBR archives are not supported");
++		return ARCHIVE_FATAL;
++	}
+ 	rar5->generic.split_after = (header_flags & HFL_SPLIT_AFTER) > 0;
+ 	rar5->generic.split_before = (header_flags & HFL_SPLIT_BEFORE) > 0;
+ 	rar5->generic.size = (int)hdr_size;
+@@ -3697,6 +3714,11 @@
+ 		return ARCHIVE_FATAL;
+ 	}
+ 
++	if(block_size < 0 || block_size > 64 * 1024 * 1024) {
++		archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++		    "CBR block exceeds 64 MiB limit");
++		return ARCHIVE_FATAL;
++	}
+ 	/* Set a flag that we're in the switching mode. */
+ 	rar5->cstate.switch_multivolume = 1;
+ 
+--- a/libarchive/archive_read_support_format_rar.c
++++ b/libarchive/archive_read_support_format_rar.c
+@@ -393,6 +393,18 @@
+    */
+   int has_encrypted_entries;
+ };
++
++int comicreader_rar_solid(struct archive *archive)
++{
++  struct archive_read *a = (struct archive_read *)archive;
++  struct rar *rar;
++  if (archive == NULL || archive_format(archive) != ARCHIVE_FORMAT_RAR ||
++      a->format == NULL || a->format->data == NULL)
++    return 0;
++  rar = a->format->data;
++  return (rar->main_flags & MHD_SOLID) != 0 ||
++      (rar->file_flags & FHD_SOLID) != 0;
++}
+ 
+ static int archive_read_support_format_rar_capabilities(struct archive_read *);
+ static int archive_read_format_rar_has_encrypted_entries(struct archive_read *);
+--- a/libarchive/archive_read_support_format_rar5.c
++++ b/libarchive/archive_read_support_format_rar5.c
+@@ -380,6 +380,17 @@
+ 	int has_encrypted_entries;
+ 	int headers_are_encrypted;
+ };
++
++int comicreader_rar5_solid(struct archive *archive)
++{
++	struct archive_read *a = (struct archive_read *)archive;
++	struct rar5 *rar5;
++	if(archive == NULL || archive_format(archive) != ARCHIVE_FORMAT_RAR_V5 ||
++	    a->format == NULL || a->format->data == NULL)
++		return 0;
++	rar5 = a->format->data;
++	return rar5->main.solid != 0 || rar5->file.solid != 0;
++}
+ 
+ /* Forward function declarations. */
+ 
+--- a/libarchive/archive_read_support_format_rar.c
++++ b/libarchive/archive_read_support_format_rar.c
+@@ -1120,5 +1120,10 @@
+   *buff = NULL;
+   if (rar->entry_eof || rar->offset_seek >= rar->unp_size) {
++    if (rar->file_crc != rar->crc_calculated) {
++      archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
++                        "File CRC error");
++      return (ARCHIVE_FAILED);
++    }
+     *size = 0;
+     *offset = rar->offset;
+     return (ARCHIVE_EOF);

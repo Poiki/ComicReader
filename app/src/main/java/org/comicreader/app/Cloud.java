@@ -98,7 +98,7 @@ final class Cloud {
     static boolean configured(Context context) {
         SharedPreferences preferences = context.getSharedPreferences("cloud", 0);
         String provider = preferences.getString("provider", "");
-        return provider.equals("drive")
+        return BuildConfig.GOOGLE_SERVICES && provider.equals("drive")
                 || provider.equals("mega")
                 || provider.equals("webdav") && !preferences.getString("endpoint", "").isEmpty();
     }

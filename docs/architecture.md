@@ -36,7 +36,7 @@ Decoded bitmaps are capped at 3 megapixels; the reader cache is 24 MiB. `CoverSt
 
 Stopping the reader clears its visible bitmap references and reader cache. A decode already in progress may finish; RAR decoder state can remain until reader destruction.
 
-ZIP uses `ZipFile`, PDF uses Android `PdfRenderer`, and RAR uses Junrar with a 64 MiB dictionary budget. RAR pages are extracted synchronously into a declared-size array, never into archive-provided filesystem paths. Solid predecessors are replayed and verified explicitly. Backward seeks in solid archives can cost more CPU.
+ZIP uses `ZipFile`, PDF uses Android `PdfRenderer`, and RAR uses an app-owned read-only JNI adapter around pinned libarchive. The adapter registers only RAR4/RAR5 readers. Source guards cap dictionary/PPMd/filter allocations at 64 MiB; that is not a total-process memory ceiling. RAR pages stream into a declared-size Java array, never into archive-provided filesystem paths. Solid predecessors are replayed and verified explicitly; non-solid skips use the reader's seek callback. Forward reads retain decoder state, and repeated reads reuse one cached page up to 8 MiB. Backward seeks in solid archives can cost more CPU. Input files are opened read-only.
 
 ## Home-screen widgets
 

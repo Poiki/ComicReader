@@ -57,6 +57,10 @@ Add widgets from your launcher's widget picker under **ComicReader**. Larger siz
 
 MEGA works with the bundled SDK. Google Drive requires your own OAuth registration and compatible Google Play services. See [cloud setup](docs/cloud-setup.md) and [progress synchronization](docs/synchronization.md).
 
+The [F-Droid variant](docs/fdroid.md) excludes Google Play Services and Google Drive. Local reading, MEGA and WebDAV remain available. Listing text is provided in English and Spanish; official repository inclusion is still pending.
+
+[Download the Google-free ARM64 build](https://github.com/Poiki/ComicReader/releases/latest/download/ComicReader-fdroid-arm64-v8a.apk) or use its universal APK from the release page.
+
 ## Build and contribute
 
 Use **JDK 21**, Android SDK **platform 37**, Build Tools **36.0.0**, and Docker with its Linux engine. Set `JAVA_HOME` and `ANDROID_HOME`. Toolchain and dependency versions are pinned.
@@ -64,6 +68,7 @@ Use **JDK 21**, Android SDK **platform 37**, Build Tools **36.0.0**, and Docker 
 ```powershell
 # First build: compile the official MEGA SDK into the local cache.
 .\scripts\build-mega-native.ps1
+.\scripts\build-archive-native.ps1
 
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 ```
@@ -85,6 +90,12 @@ Maximums: 1 GiB per comic, 10,000 pages, 64 MiB per archive image and 3 megapixe
 
 </details>
 
+## Support development
+
+[![Support ComicReader on Ko-fi](docs/images/ko-fi.svg)](https://ko-fi.com/A0A71AC06Z)
+
+Donations help fund development and are optional. You can also contribute fixes, translations and reproducible bug reports through the [contribution guide](CONTRIBUTING.md).
+
 ## License
 
-Original project code and documentation are [MIT licensed](LICENSE). Dependencies retain their own terms, including Google's SDK terms and Junrar's UnRAR license. See [third-party notices](THIRD_PARTY_NOTICES.md).
+Original project code and documentation are [MIT licensed](LICENSE). The embedded RAR decoder uses libarchive with its BSD licenses; the standard build also includes Google's authorization SDK under its own terms. See [third-party notices](THIRD_PARTY_NOTICES.md).
