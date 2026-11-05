@@ -1,0 +1,1 @@
+El widget de lectura más pequeño muestra dos cómics en curso en lugar de solo el último. Cada tarjeta abre su propio cómic. Las tarjetas se ajustan al texto grande en las versiones de Android compatibles. Esta versión sin Google mantiene MEGA, WebDAV y la lectura local, sin Google Play Services, Google Drive ni el actualizador de APK de GitHub.

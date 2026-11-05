@@ -288,6 +288,64 @@ public final class WidgetTest {
     }
 
     @Test
+    @Config(sdk = {28, 34})
+    public void smallestWidgetShowsBothUnfinishedComicsAndOpensEachOne() throws Exception {
+        Library library = Library.get(context);
+        Library.Book first = comic(context, "Nova #001.cbz", 1),
+                last = comic(context, "Orbit #001.cbz", 2),
+                finished = comic(context, "Atlas #001.cbz", 3);
+        library.update(first.id(), 1, false, false, new int[0]);
+        library.update(last.id(), 1, false, false, new int[0]);
+        library.update(finished.id(), 2, true, false, new int[0]);
+        CoverStore.get(context).load(first.id(), first, null, null);
+        CoverStore.get(context).load(last.id(), last, null, null);
+        context.getSharedPreferences("reader", 0).edit().putString("last_book", last.id()).commit();
+        List<ReadingShelf.Item> items =
+                ReadingShelf.select(ReadingShelf.get(context).items(), "continue", last.id());
+        assertEquals(
+                List.of(last.id(), first.id()),
+                items.stream().map(ReadingShelf.Item::identity).toList());
+        for (float font : new float[] {1, 1.7f}) {
+            Configuration config = new Configuration(context.getResources().getConfiguration());
+            config.fontScale = font;
+            context = context.createConfigurationContext(config);
+            View root =
+                    apply(
+                            ComicWidget.render(
+                                    context, "continue", items, 140, 140, new HashMap<>()),
+                            140,
+                            140);
+            List<View> cards = descendants(root, R.id.widget_item);
+            assertEquals(2, cards.size());
+            for (int index = 0; index < cards.size(); index++) {
+                View card = cards.get(index);
+                assertEquals(View.VISIBLE, card.getVisibility());
+                card.performClick();
+                Intent opened =
+                        shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();
+                assertEquals(items.get(index).identity(), opened.getStringExtra("id"));
+                assertEquals(
+                        items.get(index).location().key(),
+                        opened.getStringExtra("reading_location"));
+            }
+            File image =
+                    new File(
+                            "build/reports/widgets/continue-two-api"
+                                    + Build.VERSION.SDK_INT
+                                    + "-font"
+                                    + font
+                                    + ".png");
+            assertTrue(image.getParentFile().isDirectory() || image.getParentFile().mkdirs());
+            Bitmap bitmap = Bitmap.createBitmap(140, 140, Bitmap.Config.ARGB_8888);
+            root.draw(new Canvas(bitmap));
+            try (OutputStream out = new FileOutputStream(image)) {
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, out));
+            }
+            bitmap.recycle();
+        }
+    }
+
+    @Test
     public void cachedRemoteTilesUseTheExistingDownloadRouteAndEmptyWidgetsOpenTheLibrary()
             throws Exception {
         ReadingShelf.Location location =

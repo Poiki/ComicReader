@@ -196,7 +196,10 @@ public class ComicWidget extends AppWidgetProvider {
                                                 | Intent.FLAG_ACTIVITY_SINGLE_TOP),
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         root.removeAllViews(R.id.widget_content);
-        int columns = width < 280 || height < 160 ? 1 : width >= 420 && height >= 320 ? 4 : 3;
+        int columns =
+                width < 280 || height < 160
+                        ? Math.min(2, Math.max(1, items.size()))
+                        : width >= 420 && height >= 320 ? 4 : 3;
         int rows = height >= 480 ? 3 : height >= 320 ? 2 : 1;
         int count = Math.min(items.size(), Math.min(9, columns * rows));
         root.setViewVisibility(R.id.widget_empty, count == 0 ? View.VISIBLE : View.GONE);
@@ -230,7 +233,7 @@ public class ComicWidget extends AppWidgetProvider {
                                 pkg,
                                 compact
                                         ? R.layout.widget_compact
-                                        : font > 1.3f
+                                        : font > 1.3f || height < 160
                                                 ? R.layout.widget_card_short
                                                 : R.layout.widget_card);
                 int index = start + column;
