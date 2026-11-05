@@ -15,7 +15,7 @@ docker desktop start --detach
 
 The Docker image uses Linux, OpenJDK 21 and NDK r28c. Sources are pinned to MEGA SDK `v10.21.0`, commit `d1c0cb76cb98598d93b9fb0bb89612daeb0fb39c`, and vcpkg `ef7dbf94b9198bc58f45951adcf1f041fcbc5ea0`. The build keeps a named Docker cache volume and writes matching Java/Kotlin bindings, native libraries and dependency notices to `.local/mega-sdk`.
 
-The Gradle `mega-sdk` module packages that output. A pre-build check rejects missing libraries or bindings; a types-only AAR cannot produce a functional app. JNI supports `arm64-v8a` and `x86_64`, uses a static C++ runtime and 16 KiB ELF alignment. MediaInfo and unused media integrations are disabled. Native libraries are built from official sources, never copied from the reference APK.
+The Gradle `mega-sdk` module packages that output. A pre-build check rejects missing libraries or bindings; a types-only AAR cannot produce a functional app. JNI supports `arm64-v8a` and `x86_64`, uses a static C++ runtime and 16 KiB ELF alignment. MediaInfo and unused media integrations are disabled. Native libraries are built from pinned upstream source commits.
 
 ## App
 

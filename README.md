@@ -72,6 +72,8 @@ Debug APKs are written to `app/build/outputs/apk/debug/`. Release builds use R8 
 
 Read the [build guide](docs/building.md), [architecture](docs/architecture.md) and [contribution guide](CONTRIBUTING.md) before changing behavior. [Testing](docs/testing.md) records what has been verified and what still needs device testing.
 
+Google Play and F-Droid distribution are under review. See [store readiness](docs/store-readiness.md) for the requirements and current blockers.
+
 ## Current limits
 
 7z, continuous scrolling and double-page spreads are not implemented. Battery life and performance have not been benchmarked on physical hardware. Local comic copies and cached covers have no additional content encryption. Concurrent offline progress conflicts are resolved per comic.

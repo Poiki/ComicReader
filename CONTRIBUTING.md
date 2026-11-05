@@ -23,4 +23,4 @@ Run the Android checks when changing UI, storage, decoding, authorization or lif
 
 The formatter uses four-space AOSP style and verifies a pinned download checksum. Its JAR stays in `.local/`; it adds no runtime dependency.
 
-Never commit signing keys, access tokens, account sessions, personal comics, generated SDK sources, APKs or decompiled material. Test fixtures must be synthetic or have a clear redistribution license. Public APKs belong in GitHub Releases, not Git history. See [publishing](docs/updates.md) for the signing and version requirements.
+Never commit signing keys, access tokens, account sessions, personal comics, generated SDK sources, APKs or third-party proprietary binaries. Test fixtures must be synthetic or have a clear redistribution license. Public APKs belong in GitHub Releases, not Git history. See [publishing](docs/updates.md) for the signing and version requirements.
