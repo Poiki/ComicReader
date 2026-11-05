@@ -217,6 +217,17 @@ public final class PullRefreshTest {
                 new OkHttpClient.Builder()
                         .addInterceptor(
                                 chain -> {
+                                    if (chain.request().url().encodedPath().endsWith("/about"))
+                                        return new Response.Builder()
+                                                .request(chain.request())
+                                                .protocol(Protocol.HTTP_1_1)
+                                                .code(200)
+                                                .message("Test")
+                                                .body(
+                                                        ResponseBody.create(
+                                                                "{\"user\":{\"permissionId\":\"Owner\"}}",
+                                                                MediaType.get("application/json")))
+                                                .build();
                                     calls.incrementAndGet();
                                     assertTrue(
                                             chain.request()

@@ -10,7 +10,7 @@ Use the **ARM64** APK for ARM64 devices. Releases also include x86_64 and univer
 
 Install over your existing version to keep your library, accounts and progress. Do not uninstall first. The app checks GitHub Releases whenever it opens in the foreground; use **Settings → App updates → Check now** to retry immediately. Android asks you to confirm installation.
 
-[Version 0.7.3](https://github.com/Poiki/ComicReader/releases/tag/v0.7.3) adds pull-to-refresh to the library and MEGA, Drive and WebDAV folder lists, including empty folders. See its release notes for validation limits.
+[Version 0.8.0](https://github.com/Poiki/ComicReader/releases/tag/v0.8.0) adds three home-screen widgets and automatic continuation to the next unread issue in a series. See its release notes for validation limits.
 
 Releases currently retain the original **test signing certificate**. The signing key is private and is not included in this repository. Play Protect rejected a previous emulator installation; successful download and signature verification do not guarantee system approval. See [testing](docs/testing.md).
 
@@ -23,6 +23,7 @@ Releases currently retain the original **test signing certificate**. The signing
 - Browse source cards and reading filters, then use Library, Recent, Favorites and Downloads in the bottom navigation. Cover tiles include file actions; the floating **+** imports files or connects a provider.
 - Choose list or cover view, light/dark/OLED themes, blue/orange/teal accents, and whether startup opens your library, connections or the last unfinished comic. Settings open as a full-screen, searchable page with five groups and inline switches.
 - Reader controls provide direct bookmarks, brightness, reading direction, page fit and volume-key navigation. The page stays clear of visible controls; the progress bar is optional. New installations default to OLED and blue.
+- After reading the final page, turn forward once more to mark the comic complete and open the next clear unread number in the same series and folder. Downloaded copies open immediately; cloud downloads respect the selected account and mobile-data preference.
 - English and Spanish follow the device language. Choose **Settings → App language** to override it; Android 13+ also exposes the app language in system settings.
 - Opening the app starts background cover preparation, including subfolders of the saved MEGA library. It continues while reading or outside the library screen; visible covers update as they arrive. Android may defer or pause it for network, battery or scheduling limits. If MEGA has no thumbnail, generating a cover downloads the comic once and discards the temporary file. This uses transfer quota. Default: Wi-Fi/unmetered networks; change it under **Settings → MEGA covers**.
 - Direct cloud comic downloads also default to Wi-Fi/unmetered networks. Enable mobile data under **Comic downloads** if wanted. A download stops if its connection becomes disallowed.
@@ -30,6 +31,18 @@ Releases currently retain the original **test signing certificate**. The signing
 After upgrading from a version that hid CBR files, use **Settings → Refresh library** to retrieve the folder listing again.
 
 MEGA needs no application key for the bundled SDK. Google Drive requires your own OAuth registration. Progress sync is opt-in, uses one selected provider, and respects unmetered-network and battery constraints by default. It syncs reading state, not your comic files. [Cloud setup](docs/cloud-setup.md) · [Sync format and conflicts](docs/synchronization.md)
+
+## Home-screen widgets
+
+Open your launcher's widget picker and choose **ComicReader**:
+
+- **Continue reading** resumes unfinished comics, including cloud copies whose saved progress remains after removing a local download.
+- **Next issue** offers the next unread numbers from your current series.
+- **Reading shelf** combines current reads, upcoming issues and other unread comics.
+
+Resize a widget to show one, three, six, eight or nine comics, with more progress information in larger layouts. Widgets follow the app's light/dark/OLED theme, accent and English/Spanish language. Tap a cover to read; a remote file downloads only after you open it. The refresh button rereads saved listings and covers. Open the app to fetch new folder contents.
+
+Widgets use cached covers and metadata, have no periodic update job, and coalesce updates after you leave the app. Series continuation uses the lowest higher unread number in the same folder/account and stops when names are ambiguous. New imports retain known source-folder identity; existing MEGA links are reused. Older imports without origin metadata share the local library scope. Re-importing a file records its known original folder while preserving its content-based progress.
 
 ## Build
 

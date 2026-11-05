@@ -59,6 +59,11 @@ final class Secrets {
                 .putString("endpoint", endpoint)
                 .putString("auth", value)
                 .putString("provider", "webdav")
+                .putString(
+                        "webdav_id",
+                        user.isEmpty() && !password.isEmpty()
+                                ? "opaque-" + java.util.UUID.randomUUID()
+                                : webDavIdentity(endpoint, user))
                 .commit()) throw new IOException("Cannot save the account");
     }
 
@@ -66,6 +71,18 @@ final class Secrets {
         String value = context.getSharedPreferences("cloud", 0).getString("auth", "");
         if (value.isEmpty()) return "";
         return "Basic " + Base64.encodeToString(decrypt(value), Base64.NO_WRAP);
+    }
+
+    static String webDavIdentity(String endpoint, String user)
+            throws GeneralSecurityException, IOException {
+        // Password rotation must not change a named account's reading locations.
+        String root = new WebDav(endpoint, "").root().toString();
+        byte[] identity =
+                MessageDigest.getInstance("SHA-256")
+                        .digest((root + "\u0000" + user).getBytes(StandardCharsets.UTF_8));
+        return "user-"
+                + Base64.encodeToString(
+                        identity, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
     }
 
     private static String encrypt(String value) throws GeneralSecurityException, IOException {

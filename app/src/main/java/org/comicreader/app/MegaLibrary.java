@@ -9,6 +9,34 @@ import java.util.*;
 /** Remote metadata stays separate from content-hash reading progress. */
 final class MegaLibrary extends SQLiteOpenHelper {
     private static MegaLibrary instance;
+    private final Context context;
+
+    record ReadingEntry(long parent, Entry entry) {}
+
+    synchronized List<ReadingEntry> readingEntries(String owner) {
+        account(owner);
+        List<ReadingEntry> result = new ArrayList<>();
+        try (Cursor row =
+                getReadableDatabase()
+                        .rawQuery(
+                                "SELECT n.parent,n.handle,n.name,n.size,l.bookid,l.completed,l.favorite FROM nodes n LEFT JOIN links l ON n.account=l.account AND n.handle=l.handle WHERE n.account=? AND n.directory=0 AND n.size<=1073741824",
+                                new String[] {owner})) {
+            while (row.moveToNext())
+                result.add(
+                        new ReadingEntry(
+                                row.getLong(0),
+                                new Entry(
+                                        new MegaClient.Node(
+                                                row.getLong(1),
+                                                row.getString(2),
+                                                false,
+                                                row.getLong(3)),
+                                        row.getString(4),
+                                        row.isNull(5) ? null : row.getInt(5) != 0,
+                                        row.isNull(6) ? null : row.getInt(6) != 0)));
+        }
+        return result;
+    }
 
     static synchronized MegaLibrary get(Context context) {
         if (instance == null) instance = new MegaLibrary(context.getApplicationContext());
@@ -17,6 +45,7 @@ final class MegaLibrary extends SQLiteOpenHelper {
 
     private MegaLibrary(Context context) {
         super(context, "mega-library.db", null, 1);
+        this.context = context.getApplicationContext();
     }
 
     @Override
@@ -92,6 +121,7 @@ final class MegaLibrary extends SQLiteOpenHelper {
         } finally {
             db.endTransaction();
         }
+        ComicWidget.changed(context);
     }
 
     synchronized Snapshot snapshot(String account, long parent) {
@@ -157,6 +187,7 @@ final class MegaLibrary extends SQLiteOpenHelper {
                         .insertWithOnConflict(
                                 "links", null, values, SQLiteDatabase.CONFLICT_REPLACE)
                 == -1) throw new SQLiteException("Could not link the MEGA comic");
+        ComicWidget.changed(context);
     }
 
     synchronized void flags(
@@ -185,6 +216,7 @@ final class MegaLibrary extends SQLiteOpenHelper {
                         .insertWithOnConflict(
                                 "links", null, values, SQLiteDatabase.CONFLICT_REPLACE)
                 == -1) throw new SQLiteException("MEGA state was not saved");
+        ComicWidget.changed(context);
     }
 
     record Entry(MegaClient.Node node, String bookId, Boolean completed, Boolean favorite) {}

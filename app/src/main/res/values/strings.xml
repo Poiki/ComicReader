@@ -259,4 +259,21 @@
         <item>@string/ui_favorites</item>
         <item>@string/ui_title_a_z</item>
     </string-array>
+    <string name="widget_continue">Continue reading</string>
+    <string name="widget_next">Next issue</string>
+    <string name="widget_shelf">Reading shelf</string>
+    <string name="widget_refresh">Refresh widget</string>
+    <string name="reading_account_changed">Connect the original cloud account to open this comic.</string>
+    <string name="reading_unavailable">This comic is no longer available. Open the library to choose another.</string>
+    <string name="widget_continue_description">Resume your unfinished comics. Resize to see more covers and progress.</string>
+    <string name="widget_next_description">Unread issues that follow your current series, in their original folders.</string>
+    <string name="widget_shelf_description">A selection of current and upcoming comics. Expand for more information.</string>
+    <string name="widget_empty_continue">Open a comic to start reading.</string>
+    <string name="widget_empty_next">No next unread issue. Open the library.</string>
+    <string name="widget_empty_shelf">Add comics or choose a cloud folder.</string>
+    <string name="widget_remote">Download when opened</string>
+    <string name="widget_progress">%1$d / %2$d · %3$d%%</string>
+    <string name="series_finished">Comic completed. No clear next unread issue in this folder.</string>
+    <string name="series_finding_next">Finding the next issue…</string>
+    <string name="reading_opening">Opening comic…</string>
 </resources>

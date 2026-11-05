@@ -23,10 +23,76 @@ final class Cloud {
                 context.getSharedPreferences("downloads", 0).getBoolean("metered", false));
     }
 
+    static <T> T download(Context context, java.util.concurrent.Callable<T> work) throws Exception {
+        Thread owner = Thread.currentThread();
+        java.util.concurrent.atomic.AtomicBoolean blocked =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        ConnectivityManager network = context.getSystemService(ConnectivityManager.class);
+        class DownloadNetwork extends ConnectivityManager.NetworkCallback {
+            private boolean active = true;
+
+            private synchronized void check() {
+                if (active && !downloadAllowed(context)) {
+                    blocked.set(true);
+                    owner.interrupt();
+                }
+            }
+
+            synchronized void stop() {
+                active = false;
+            }
+
+            @Override
+            public void onCapabilitiesChanged(Network value, NetworkCapabilities capabilities) {
+                check();
+            }
+
+            @Override
+            public void onLost(Network value) {
+                check();
+            }
+        }
+        DownloadNetwork watch = new DownloadNetwork();
+        network.registerDefaultNetworkCallback(watch);
+        try {
+            if (!downloadAllowed(context))
+                throw new IOException(context.getString(R.string.download_network_required));
+            return work.call();
+        } catch (Exception error) {
+            if (blocked.get())
+                throw new IOException(context.getString(R.string.download_network_changed), error);
+            throw error;
+        } finally {
+            watch.stop();
+            network.unregisterNetworkCallback(watch);
+            Thread.interrupted();
+        }
+    }
+
     static WebDav client(Context context) throws Exception {
-        return new WebDav(
-                context.getSharedPreferences("cloud", 0).getString("endpoint", ""),
-                Secrets.authorization(context));
+        SharedPreferences preferences = context.getSharedPreferences("cloud", 0);
+        String endpoint = preferences.getString("endpoint", "");
+        String authorization = Secrets.authorization(context), user = "";
+        if (!authorization.isEmpty()) {
+            if (!authorization.startsWith("Basic "))
+                throw new IOException("Invalid saved WebDAV credentials");
+            String credentials =
+                    new String(
+                            android.util.Base64.decode(
+                                    authorization.substring(6), android.util.Base64.DEFAULT),
+                            java.nio.charset.StandardCharsets.UTF_8);
+            int colon = credentials.indexOf(':');
+            if (colon < 0) throw new IOException("Invalid saved WebDAV credentials");
+            user = credentials.substring(0, colon);
+        }
+        String previous = preferences.getString("webdav_id", "");
+        String owner =
+                user.isEmpty() && !authorization.isEmpty()
+                        ? previous.startsWith("opaque-") ? previous : "opaque-" + UUID.randomUUID()
+                        : Secrets.webDavIdentity(endpoint, user);
+        if (!owner.equals(previous) && !preferences.edit().putString("webdav_id", owner).commit())
+            throw new IOException("Could not save the WebDAV connection identity");
+        return new WebDav(endpoint, authorization, owner);
     }
 
     static boolean configured(Context context) {

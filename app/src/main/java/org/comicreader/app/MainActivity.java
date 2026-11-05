@@ -241,7 +241,8 @@ public final class MainActivity extends Activity {
         if (saved == null
                 && Intent.ACTION_VIEW.equals(getIntent().getAction())
                 && getIntent().getData() != null) importUris(List.of(getIntent().getData()));
-        else if (saved == null
+        else if (saved == null && handleReadingIntent(getIntent())) {
+        } else if (saved == null
                 && getSharedPreferences("appearance", 0)
                         .getString("startup", "library")
                         .equals("reader")) resumeLastBook();
@@ -858,6 +859,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (!resumed) ComicWidget.foreground(this, true);
         if (!resumed) MegaClient.instance(this).browsing(true);
         resumed = true;
         covers.setPaused(busy);
@@ -1057,8 +1059,25 @@ public final class MainActivity extends Activity {
         startActivity(new Intent(this, ReaderActivity.class).putExtra("id", book.id()));
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleReadingIntent(intent);
+    }
+
+    private boolean handleReadingIntent(Intent intent) {
+        String action = intent.getAction();
+        if ("org.comicreader.app.LIBRARY".equals(action)) {
+            showLibrary(0);
+            return true;
+        }
+        return false;
+    }
+
     private void resumeLastBook() {
         String id = getSharedPreferences("reader", 0).getString("last_book", "");
+        String location = getSharedPreferences("reader", 0).getString("last_location", "");
         worker.execute(
                 () -> {
                     try {
@@ -1071,7 +1090,12 @@ public final class MainActivity extends Activity {
                                 && library.file(book).isFile())
                             runOnUiThread(
                                     () -> {
-                                        if (!isDestroyed()) open(book);
+                                        if (!isDestroyed())
+                                            startActivity(
+                                                    new Intent(this, ReaderActivity.class)
+                                                            .putExtra("id", book.id())
+                                                            .putExtra(
+                                                                    "reading_location", location));
                                     });
                     } catch (Exception error) {
                         runOnUiThread(() -> Ui.error(this, error));
@@ -1095,8 +1119,24 @@ public final class MainActivity extends Activity {
             remoteBooks.clear();
             showLibrary(selection);
             refresh();
-        } else if (item.book() != null) open(item.book());
-        else {
+        } else if (item.book() != null) {
+            Intent reading =
+                    new Intent(this, ReaderActivity.class).putExtra("id", item.book().id());
+            if (item.remote() != null) {
+                MegaClient.Node node = item.remote().node();
+                reading.putExtra(
+                        "reading_location",
+                        new ReadingShelf.Location(
+                                        "mega",
+                                        megaAccount,
+                                        Long.toString(megaFolder),
+                                        Long.toString(node.handle()),
+                                        node.name(),
+                                        node.size())
+                                .key());
+            }
+            startActivity(reading);
+        } else {
             MegaClient mega = MegaClient.instance(this);
             if (!mega.loggedIn()) {
                 megaLogin();
@@ -1115,6 +1155,17 @@ public final class MainActivity extends Activity {
                                     Importer.fromDownload(this, item.title(), temporary);
                             MegaLibrary.get(this)
                                     .link(this, account, item.remote().node().handle(), book);
+                            MegaClient.Node node = item.remote().node();
+                            ReadingShelf.get(this)
+                                    .link(
+                                            book,
+                                            new ReadingShelf.Location(
+                                                    "mega",
+                                                    account,
+                                                    Long.toString(megaFolder),
+                                                    Long.toString(node.handle()),
+                                                    node.name(),
+                                                    node.size()));
                             return book;
                         } finally {
                             if (temporary.exists() && !temporary.delete())
@@ -2040,8 +2091,37 @@ public final class MainActivity extends Activity {
     private void browseDrive(DriveClient drive, String folder, Deque<String> parents) {
         task(
                 getString(R.string.ui_loading_google_drive),
-                () -> drive.list(folder),
+                () -> readDriveFolder(drive, folder),
                 entries -> showDriveFolder(drive, folder, parents, entries));
+    }
+
+    private List<DriveClient.Entry> readDriveFolder(DriveClient drive, String folder)
+            throws Exception {
+        String owner = drive.account();
+        List<DriveClient.Entry> entries = drive.list(folder);
+        ReadingShelf.get(this)
+                .replace(
+                        "drive",
+                        owner,
+                        folder,
+                        entries.stream()
+                                .filter(
+                                        entry ->
+                                                !entry.directory()
+                                                        && ComicFiles.supported(entry.name())
+                                                        && entry.size() <= ComicFiles.MAX_COMIC)
+                                .map(
+                                        entry ->
+                                                new ReadingShelf.Location(
+                                                        "drive",
+                                                        owner,
+                                                        folder,
+                                                        entry.id(),
+                                                        entry.name(),
+                                                        entry.size()))
+                                .toList());
+        getSharedPreferences("drive", 0).edit().putString("account", owner).apply();
+        return entries;
     }
 
     private void showDriveFolder(
@@ -2080,10 +2160,28 @@ public final class MainActivity extends Activity {
                                                                     try (InputStream input =
                                                                             drive.download(
                                                                                     entry.id())) {
-                                                                        return Importer.fromStream(
-                                                                                this,
-                                                                                entry.name(),
-                                                                                input);
+                                                                        Library.Book book =
+                                                                                Importer.fromStream(
+                                                                                        this,
+                                                                                        entry
+                                                                                                .name(),
+                                                                                        input);
+                                                                        ReadingShelf.get(this)
+                                                                                .link(
+                                                                                        book,
+                                                                                        new ReadingShelf
+                                                                                                .Location(
+                                                                                                "drive",
+                                                                                                drive
+                                                                                                        .account(),
+                                                                                                folder,
+                                                                                                entry
+                                                                                                        .id(),
+                                                                                                entry
+                                                                                                        .name(),
+                                                                                                entry
+                                                                                                        .size()));
+                                                                        return book;
                                                                     }
                                                                 },
                                                                 book -> {
@@ -2105,7 +2203,7 @@ public final class MainActivity extends Activity {
                 picker,
                 getString(R.string.ui_loading_google_drive),
                 getString(R.string.ui_folder_empty),
-                () -> drive.list(folder),
+                () -> readDriveFolder(drive, folder),
                 updated -> showDriveFolder(drive, folder, parents, updated));
     }
 
@@ -2295,6 +2393,9 @@ public final class MainActivity extends Activity {
                         refresh();
                     }
                     getSharedPreferences("cloud", 0).edit().clear().apply();
+                    if (provider.equals("drive"))
+                        getSharedPreferences("drive", 0).edit().clear().apply();
+                    ComicWidget.changed(this);
                     getSystemService(JobScheduler.class).cancel(1);
                     updateStatus();
                 };
@@ -2454,8 +2555,34 @@ public final class MainActivity extends Activity {
     private void browse(WebDav dav, URI folder, Deque<URI> parents) {
         task(
                 getString(R.string.ui_loading_folder),
-                () -> dav.list(folder),
+                () -> readWebDavFolder(dav, folder),
                 entries -> showWebDavFolder(dav, folder, parents, entries));
+    }
+
+    private List<WebDav.Entry> readWebDavFolder(WebDav dav, URI folder) throws Exception {
+        List<WebDav.Entry> entries = dav.list(folder);
+        ReadingShelf.get(this)
+                .replace(
+                        "webdav",
+                        dav.owner,
+                        folder.toString(),
+                        entries.stream()
+                                .filter(
+                                        entry ->
+                                                !entry.directory()
+                                                        && ComicFiles.supported(entry.name())
+                                                        && entry.size() <= ComicFiles.MAX_COMIC)
+                                .map(
+                                        entry ->
+                                                new ReadingShelf.Location(
+                                                        "webdav",
+                                                        dav.owner,
+                                                        folder.toString(),
+                                                        entry.uri().toString(),
+                                                        entry.name(),
+                                                        entry.size()))
+                                .toList());
+        return entries;
     }
 
     private void showWebDavFolder(
@@ -2519,12 +2646,30 @@ public final class MainActivity extends Activity {
                                                                                     dav.download(
                                                                                             entry
                                                                                                     .uri())) {
-                                                                                return Importer
-                                                                                        .fromStream(
-                                                                                                this,
-                                                                                                entry
-                                                                                                        .name(),
-                                                                                                in);
+                                                                                Library.Book book =
+                                                                                        Importer
+                                                                                                .fromStream(
+                                                                                                        this,
+                                                                                                        entry
+                                                                                                                .name(),
+                                                                                                        in);
+                                                                                ReadingShelf.get(
+                                                                                                this)
+                                                                                        .link(
+                                                                                                book,
+                                                                                                new ReadingShelf
+                                                                                                        .Location(
+                                                                                                        "webdav",
+                                                                                                        dav.owner,
+                                                                                                        folder
+                                                                                                                .toString(),
+                                                                                                        entry.uri()
+                                                                                                                .toString(),
+                                                                                                        entry
+                                                                                                                .name(),
+                                                                                                        entry
+                                                                                                                .size()));
+                                                                                return book;
                                                                             }
                                                                         },
                                                                         book -> {
@@ -2546,7 +2691,7 @@ public final class MainActivity extends Activity {
                 picker,
                 getString(R.string.ui_loading_folder),
                 getString(R.string.ui_folder_empty),
-                () -> dav.list(folder),
+                () -> readWebDavFolder(dav, folder),
                 updated -> showWebDavFolder(dav, folder, parents, updated));
     }
 
@@ -2688,58 +2833,7 @@ public final class MainActivity extends Activity {
                     .show();
             return;
         }
-        task(
-                label,
-                () -> {
-                    Thread owner = Thread.currentThread();
-                    java.util.concurrent.atomic.AtomicBoolean blocked =
-                            new java.util.concurrent.atomic.AtomicBoolean();
-                    android.net.ConnectivityManager network =
-                            getSystemService(android.net.ConnectivityManager.class);
-                    class DownloadNetwork extends android.net.ConnectivityManager.NetworkCallback {
-                        private boolean active = true;
-
-                        private synchronized void check() {
-                            if (active && !Cloud.downloadAllowed(MainActivity.this)) {
-                                blocked.set(true);
-                                owner.interrupt();
-                            }
-                        }
-
-                        synchronized void stop() {
-                            active = false;
-                        }
-
-                        @Override
-                        public void onCapabilitiesChanged(
-                                android.net.Network value,
-                                android.net.NetworkCapabilities capabilities) {
-                            check();
-                        }
-
-                        @Override
-                        public void onLost(android.net.Network value) {
-                            check();
-                        }
-                    }
-                    DownloadNetwork watch = new DownloadNetwork();
-                    network.registerDefaultNetworkCallback(watch);
-                    try {
-                        if (!Cloud.downloadAllowed(this))
-                            throw new IOException(getString(R.string.download_network_required));
-                        return work.run();
-                    } catch (Exception error) {
-                        if (blocked.get())
-                            throw new IOException(
-                                    getString(R.string.download_network_changed), error);
-                        throw error;
-                    } finally {
-                        watch.stop();
-                        network.unregisterNetworkCallback(watch);
-                        Thread.interrupted();
-                    }
-                },
-                done);
+        task(label, () -> Cloud.download(this, work::run), done);
     }
 
     private <T> void task(String label, Work<T> work, java.util.function.Consumer<T> done) {
@@ -2862,6 +2956,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        if (resumed) ComicWidget.foreground(this, false);
         shelfRefresh.setRefreshing(false);
         if (resumed) MegaClient.instance(this).browsing(false);
         resumed = false;

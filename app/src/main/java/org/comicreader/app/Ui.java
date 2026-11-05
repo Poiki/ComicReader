@@ -41,7 +41,7 @@ final class Ui {
                 });
     }
 
-    static int accent(Activity activity) {
+    static int accent(Context activity) {
         return switch (activity.getSharedPreferences("appearance", 0).getString("accent", "blue")) {
             case "orange" -> 0xffff9000;
             case "teal" -> 0xff16b8a6;
@@ -59,29 +59,29 @@ final class Ui {
                         Color.blue(color) * 2 / 3);
     }
 
-    static String theme(Activity activity) {
+    static String theme(Context activity) {
         return activity.getSharedPreferences("appearance", 0).getString("theme", "oled");
     }
 
-    static boolean dark(Activity activity) {
+    static boolean dark(Context activity) {
         return !theme(activity).equals("light");
     }
 
-    static int background(Activity activity) {
+    static int background(Context activity) {
         return !dark(activity)
                 ? Color.WHITE
                 : theme(activity).equals("oled") ? Color.BLACK : 0xff121212;
     }
 
-    static int foreground(Activity activity) {
+    static int foreground(Context activity) {
         return dark(activity) ? 0xffeeeeee : 0xff111111;
     }
 
-    static int secondary(Activity activity) {
+    static int secondary(Context activity) {
         return dark(activity) ? 0xffbbbbbb : 0xff646464;
     }
 
-    static int surface(Activity activity) {
+    static int surface(Context activity) {
         return dark(activity)
                 ? theme(activity).equals("oled") ? 0xff0d1012 : 0xff202428
                 : 0xfff0f3f6;
@@ -276,6 +276,14 @@ final class Ui {
                     case "MEGA took too long to finish the previous operation; try again" ->
                             R.string.error_mega_busy_timeout;
                     case "The MEGA folder is no longer available" -> R.string.error_mega_folder;
+                    case "Reconnect the original Google Drive account",
+                            "Reconnect the original WebDAV account",
+                            "The saved folder belongs to another MEGA account" ->
+                            R.string.reading_account_changed;
+                    case "The comic is no longer in the library",
+                            "The completed comic is unavailable",
+                            "The local copy is unavailable" ->
+                            R.string.reading_unavailable;
                     default -> 0;
                 };
         return translated == 0 ? message(error) : context.getString(translated);

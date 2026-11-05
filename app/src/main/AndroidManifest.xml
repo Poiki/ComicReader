@@ -7,6 +7,7 @@
         android:icon="@drawable/ic_launcher" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules"
         android:supportsRtl="true" android:usesCleartextTraffic="false" android:localeConfig="@xml/locales_config">
         <activity android:name=".ReaderActivity" android:exported="false" />
+        <activity android:name=".ReadActivity" android:exported="false" android:configChanges="orientation|screenSize|smallestScreenSize" />
         <provider android:name=".UpdateProvider" android:authorities="org.comicreader.app.updates"
             android:exported="false" android:grantUriPermissions="true" />
         <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|smallestScreenSize">
@@ -30,5 +31,17 @@
         </activity>
         <service android:name=".SyncJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />
         <service android:name=".CoverJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />
+        <receiver android:name=".ComicWidget$Continue" android:label="@string/widget_continue" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /><action android:name="android.intent.action.LOCALE_CHANGED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_continue" />
+        </receiver>
+        <receiver android:name=".ComicWidget$Next" android:label="@string/widget_next" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_next" />
+        </receiver>
+        <receiver android:name=".ComicWidget$Shelf" android:label="@string/widget_shelf" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_shelf" />
+        </receiver>
     </application>
 </manifest>

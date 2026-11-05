@@ -3,6 +3,7 @@ package org.comicreader.app;
 import android.content.*;
 import android.database.Cursor;
 import android.net.Uri;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 
 import java.io.*;
@@ -26,7 +27,24 @@ final class Importer {
             throw new IOException("Select a CBZ/ZIP, CBR/RAR or PDF");
         try (InputStream in = context.getContentResolver().openInputStream(uri)) {
             if (in == null) throw new IOException("The provider cannot open this document");
-            return fromStream(context, name, in);
+            Library.Book book = fromStream(context, name, in);
+            String parent = uri.toString();
+            if (DocumentsContract.isDocumentUri(context, uri)) {
+                String document = DocumentsContract.getDocumentId(uri);
+                int slash = document.lastIndexOf('/');
+                if (slash >= 0) parent = document.substring(0, slash);
+            } else if ("file".equals(uri.getScheme())) parent = new File(uri.getPath()).getParent();
+            ReadingShelf.get(context)
+                    .link(
+                            book,
+                            new ReadingShelf.Location(
+                                    "local",
+                                    uri.getAuthority() == null ? "" : uri.getAuthority(),
+                                    parent,
+                                    uri.toString(),
+                                    name,
+                                    book.size()));
+            return book;
         }
     }
 
@@ -99,9 +117,11 @@ final class Importer {
                     default -> "cbz";
                 };
         Library.Book book = new Library.Book(hash.toString(), title, format, size);
+        int count;
         try (PageSource pages = new PageSource(staged, format)) {
-            Library.get(context).add(book, staged, pages.count());
+            count = pages.count();
         }
+        Library.get(context).add(book, staged, count);
         return book;
     }
 }

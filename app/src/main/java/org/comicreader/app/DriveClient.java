@@ -40,6 +40,35 @@ public final class DriveClient {
 
     private final String authorization;
     private final OkHttpClient http;
+    private String account;
+
+    synchronized String account() throws IOException {
+        if (account != null) return account;
+        HttpUrl url =
+                HttpUrl.get("https://www.googleapis.com/drive/v3/about")
+                        .newBuilder()
+                        .addQueryParameter("fields", "user(permissionId)")
+                        .build();
+        try (Response response = http.newCall(request(url).get().build()).execute()) {
+            requireStatus(response, 200);
+            String owner;
+            try {
+                owner =
+                        new JSONObject(
+                                        new String(
+                                                read(response.body(), 64 * 1024),
+                                                StandardCharsets.UTF_8))
+                                .getJSONObject("user")
+                                .getString("permissionId");
+            } catch (JSONException error) {
+                throw new IOException("Drive returned no account identity", error);
+            }
+            if (!owner.matches("[A-Za-z0-9_-]{1,128}"))
+                throw new IOException("Drive returned an invalid account identity");
+            account = owner;
+            return account;
+        }
+    }
 
     public DriveClient(String bearer) throws IOException {
         this(bearer, HTTP);

@@ -192,6 +192,7 @@ final class CoverStore {
             }
             if (!temporary.renameTo(destination)) throw new IOException("Cannot save cover cache");
             trim(directory);
+            ComicWidget.changed(context);
         } finally {
             if (temporary.exists() && !temporary.delete())
                 android.util.Log.w("ComicReader", "Could not remove a temporary cover image");

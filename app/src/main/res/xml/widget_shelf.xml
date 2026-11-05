@@ -1,0 +1,7 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" tools:targetApi="s"
+    android:previewImage="@drawable/widget_shelf_preview"
+    android:minWidth="280dp" android:minHeight="320dp" android:minResizeWidth="140dp" android:minResizeHeight="140dp"
+    android:targetCellWidth="4" android:targetCellHeight="4" android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0" android:initialLayout="@layout/widget_shelf" android:previewLayout="@layout/widget_shelf"
+    android:widgetCategory="home_screen" android:description="@string/widget_shelf_description" />

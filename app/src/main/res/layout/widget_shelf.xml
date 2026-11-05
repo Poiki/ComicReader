@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="10dp" android:background="@drawable/widget_oled">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+        <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/app_name" android:textSize="14sp" android:textStyle="bold"
+            android:textColor="#eeeeee" android:maxLines="2" android:ellipsize="end" android:includeFontPadding="false" />
+        <ImageButton android:id="@+id/widget_refresh" android:layout_width="48dp" android:layout_height="48dp"
+            android:padding="13dp" android:src="@drawable/icon_sync" android:scaleType="fitCenter"
+            android:background="@android:color/transparent" android:contentDescription="@string/widget_refresh" />
+    </LinearLayout>
+    <TextView android:id="@+id/widget_empty" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:gravity="center" android:text="@string/widget_empty_shelf" android:textColor="#bbbbbb"
+        android:textSize="13sp" android:maxLines="4" android:ellipsize="end" />
+    <LinearLayout android:id="@+id/widget_content" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" />
+</LinearLayout>

@@ -38,10 +38,12 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
     private Progress state;
     private PageSource source;
     private int page, requested;
+    private int displayedPage = -1;
     private volatile int generation;
     private volatile boolean active;
     private boolean dirty, controls = true, ready, sourceReady, pageDirty, completionDirty;
     private boolean trackingSeek;
+    private boolean advancingComic;
     private int renderedWidth, renderedHeight;
     private final TreeSet<Integer> bookmarks = new TreeSet<>();
     private final TreeSet<Integer> addedMarks = new TreeSet<>(), removedMarks = new TreeSet<>();
@@ -157,12 +159,31 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                         Progress loaded = library.state(loadedBook.id());
                         if (loaded == null)
                             throw new IOException("No progress record was found for this file");
+                        String supplied = getIntent().getStringExtra("reading_location");
+                        String location =
+                                supplied == null || supplied.isEmpty()
+                                        ? ReadingShelf.get(this).origin(loadedBook.id())
+                                        : supplied;
                         runOnUiThread(
                                 () -> {
                                     if (isDestroyed()) return;
                                     book = loadedBook;
                                     state = loaded;
-                                    settings().edit().putString("last_book", book.id()).apply();
+                                    if (location != null)
+                                        getIntent().putExtra("reading_location", location);
+                                    settings()
+                                            .edit()
+                                            .putString("last_book", book.id())
+                                            .putString(
+                                                    "last_location",
+                                                    getIntent().getStringExtra("reading_location")
+                                                                    == null
+                                                            ? ""
+                                                            : getIntent()
+                                                                    .getStringExtra(
+                                                                            "reading_location"))
+                                            .apply();
+                                    ComicWidget.changed(this);
                                     for (int value : loaded.bookmarks()) bookmarks.add(value);
                                     page = requested = loaded.page;
                                     if (saved != null && saved.containsKey("page")) {
@@ -333,6 +354,7 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
     @Override
     protected void onResume() {
         super.onResume();
+        if (!active) ComicWidget.foreground(this, true);
         active = true;
         applySettings();
         if (state != null && sourceReady) {
@@ -384,9 +406,18 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
 
     @Override
     public void advance(int direction) {
-        if (state == null) return;
+        if (state == null || advancingComic) return;
         int next = requested + direction;
         if (next < 0 || next >= state.pages) {
+            if (direction > 0
+                    && ready
+                    && active
+                    && displayedPage == page
+                    && page == state.pages - 1
+                    && requested == page) {
+                finishComic();
+                return;
+            }
             Ui.toast(
                     this,
                     next < 0
@@ -442,6 +473,7 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                                 pageDirty = true;
                             }
                             page = number;
+                            displayedPage = number;
                             image.show(
                                     rendered,
                                     settings().getBoolean("width", false),
@@ -519,8 +551,88 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
     }
 
     private void save() {
+        save(null);
+    }
+
+    private void finishComic() {
+        if (advancingComic) return;
+        advancingComic = true;
+        state =
+                new Progress(
+                        state.id,
+                        page,
+                        state.pages,
+                        true,
+                        state.favorite,
+                        bookmarks.stream().mapToInt(Integer::intValue).toArray(),
+                        state.revision,
+                        state.device);
+        dirty = pageDirty = completionDirty = true;
+        save(
+                () ->
+                        Library.IO.execute(
+                                () -> {
+                                    try {
+                                        ReadingShelf shelf = ReadingShelf.get(this);
+                                        ReadingShelf.Item current =
+                                                shelf.current(
+                                                        book.id(),
+                                                        getIntent()
+                                                                .getStringExtra(
+                                                                        "reading_location"));
+                                        ReadingShelf.Item next =
+                                                current == null
+                                                        ? null
+                                                        : ReadingShelf.next(current, shelf.items());
+                                        runOnUiThread(
+                                                () -> {
+                                                    advancingComic = false;
+                                                    if (!active || isDestroyed()) return;
+                                                    if (next != null && next.book() != null) {
+                                                        startActivity(
+                                                                ReadingShelf.open(this, next));
+                                                        finish();
+                                                        return;
+                                                    }
+                                                    if (current != null
+                                                            && Series.parse(current.title()) != null
+                                                            && !current.location()
+                                                                    .provider()
+                                                                    .equals("local")) {
+                                                        startActivity(
+                                                                new Intent(this, ReadActivity.class)
+                                                                        .setAction(
+                                                                                "org.comicreader.app.NEXT")
+                                                                        .putExtra(
+                                                                                "finished_book",
+                                                                                book.id())
+                                                                        .putExtra(
+                                                                                "reading_location",
+                                                                                current.location()
+                                                                                        .key()));
+                                                        finish();
+                                                    } else
+                                                        Ui.toast(
+                                                                this,
+                                                                getString(
+                                                                        R.string.series_finished));
+                                                });
+                                    } catch (Exception error) {
+                                        runOnUiThread(
+                                                () -> {
+                                                    advancingComic = false;
+                                                    Ui.error(this, error);
+                                                });
+                                    }
+                                }));
+    }
+
+    private void save(Runnable committed) {
         handler.removeCallbacks(saveLater);
-        if (!dirty || state == null) return;
+        if (!dirty || state == null) {
+            if (committed != null) committed.run();
+            return;
+        }
         Integer savedPage = pageDirty ? page : null;
         Boolean completed = completionDirty ? state.completed : null;
         int[] added = addedMarks.stream().mapToInt(Integer::intValue).toArray(),
@@ -533,10 +645,17 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
                     try {
                         Library.get(this)
                                 .updateReading(book.id(), savedPage, completed, added, removed);
+                        if (committed != null)
+                            runOnUiThread(
+                                    () -> {
+                                        if (active && !isDestroyed()) committed.run();
+                                        else advancingComic = false;
+                                    });
                     } catch (Exception e) {
                         runOnUiThread(
                                 () -> {
                                     dirty = true;
+                                    advancingComic = false;
                                     pageDirty |= savedPage != null;
                                     completionDirty |= completed != null;
                                     for (int mark : added)
@@ -744,6 +863,8 @@ public final class ReaderActivity extends Activity implements PageView.Actions {
 
     @Override
     protected void onPause() {
+        displayedPage = -1;
+        if (active) ComicWidget.foreground(this, false);
         active = false;
         generation++;
         save();

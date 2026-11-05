@@ -22,3 +22,5 @@ Original ComicReader code is licensed under MIT. Dependency licenses remain sepa
 Local reading and MEGA do not require a Google account. Drive authorization requires compatible Google Play services. This repository does not claim that every dependency is MIT licensed or that Google binaries are free software.
 
 The privately supplied reference APK, its decompilation, resources and native libraries are excluded from this repository and the app. ComicReader uses its own implementation and launcher artwork, with the licensed interface icons listed above. The synthetic RAR test fixtures contain only project-authored images; the proprietary RAR archiver used to generate compressed fixtures is not distributed.
+
+Widget picker previews are rendered from the app's native layouts using original synthetic covers drawn by `WidgetTest`. They contain no third-party comic artwork.

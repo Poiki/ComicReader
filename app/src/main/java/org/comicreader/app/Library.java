@@ -18,10 +18,12 @@ public final class Library extends SQLiteOpenHelper {
     }
 
     private final File directory;
+    private final Context context;
     public final String device;
 
     private Library(Context context) {
         super(context, "library.db", null, 1);
+        this.context = context.getApplicationContext();
         directory = new File(context.getFilesDir(), "comics");
         SharedPreferences preferences = context.getSharedPreferences("reader", 0);
         String stored = preferences.getString("device", null);
@@ -100,6 +102,7 @@ public final class Library extends SQLiteOpenHelper {
         } finally {
             db.endTransaction();
         }
+        ComicWidget.changed(context);
     }
 
     public synchronized List<Book> books() {
@@ -207,6 +210,7 @@ public final class Library extends SQLiteOpenHelper {
                             device);
             put(next);
             db.setTransactionSuccessful();
+            ComicWidget.changed(context);
             return next;
         } finally {
             db.endTransaction();
@@ -262,6 +266,7 @@ public final class Library extends SQLiteOpenHelper {
         } finally {
             db.endTransaction();
         }
+        ComicWidget.changed(context);
     }
 
     private long stateCount() {
@@ -276,6 +281,7 @@ public final class Library extends SQLiteOpenHelper {
         File file = file(book);
         if (file.exists() && !file.delete()) throw new IOException("Cannot delete the local copy");
         getWritableDatabase().delete("books", "id=?", new String[] {book.id});
+        ComicWidget.changed(context);
     }
 
     public record Book(String id, String title, String format, long size) {

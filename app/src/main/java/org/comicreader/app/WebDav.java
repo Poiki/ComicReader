@@ -42,8 +42,14 @@ public final class WebDav {
 
     private final URI root;
     private final String authorization;
+    final String owner;
 
     public WebDav(String endpoint, String authorization) throws IOException {
+        this(endpoint, authorization, "");
+    }
+
+    WebDav(String endpoint, String authorization, String owner) throws IOException {
+        this.owner = owner;
         if (endpoint == null) throw new IOException("Missing WebDAV address");
         try {
             root = folder(validate(new URI(endpoint)));

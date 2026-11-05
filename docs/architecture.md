@@ -24,6 +24,10 @@ Imported files are hashed once with SHA-256, validated and moved or copied into 
 
 ## Reader
 
+`ReadingShelf` stores visited-folder metadata and content-hash origins in `reading-shelf.db`, independently of book files and progress. It reuses existing MEGA catalog links and records Drive/WebDAV listings for widget suggestions. Drive identity comes from the API's permission ID; WebDAV identity hashes the normalized endpoint and login name, preserving links through password changes. Password-only connections receive a new opaque identity when reconfigured. Opening a remote file verifies that its original account is still selected. Local document imports preserve a parent document ID when the provider exposes one; no directory scan or broader storage permission is added.
+
+`Series` recognizes numbered filenames, issue markers, volumes and parenthesized years. Continuation selects the lowest higher unread issue with the same series and source folder, rejecting ambiguous duplicate numbers. The reader only completes a comic after a forward turn beyond its rendered last page. Progress must commit successfully before navigation, and paused activities cannot launch another reader in the background. Downloaded next issues open immediately; the private `ReadActivity` refreshes remote listings and downloads when needed, sharing the same `Cloud.download` network-handover guard as manual downloads.
+
 The UI requests rendering on a serial worker. At most the active request and latest pending render remain relevant; stale work cannot replace a newer page. One page is prefetched in the current direction unless the app is paused, Android reports low RAM or battery saver is enabled.
 
 Decoded bitmaps are capped at 3 megapixels; the reader cache is 24 MiB. `CoverStore` owns an application-context 8 MiB memory cache and 32 MiB/2,000-file disk cache, with thumbnails at most 192×288. It serializes generation so UI and background requests reuse a result. `CoverCache` keeps weak cell targets, a 32-entry UI queue and a coalesced directory observer. Closing an Activity cancels its view work without clearing shared cover data.
@@ -33,6 +37,12 @@ Decoded bitmaps are capped at 3 megapixels; the reader cache is 24 MiB. `CoverSt
 Stopping the reader clears its visible bitmap references and reader cache. A decode already in progress may finish; RAR decoder state can remain until reader destruction.
 
 ZIP uses `ZipFile`, PDF uses Android `PdfRenderer`, and RAR uses Junrar with a 64 MiB dictionary budget. RAR pages are extracted synchronously into a declared-size array, never into archive-provided filesystem paths. Solid predecessors are replayed and verified explicitly. Backward seeks in solid archives can cost more CPU.
+
+## Home-screen widgets
+
+`ComicWidget` provides Continue, Next and Shelf widgets using native `RemoteViews`. Android 12+ chooses among five responsive layouts; older hosts use their size options. Up to nine bounded cached thumbnails and small progress images share one bitmap bank across layouts. Full updates replace images rather than retaining partial bitmap actions. The widget receivers and reading entry activity are not exported; cover taps use explicit immutable pending intents, and original comic files are never exposed to the launcher.
+
+Widget updates are event-driven and coalesced. Library, progress, folder, account and cover changes schedule updates after the app leaves the foreground; user refresh and host update requests can refresh immediately. There is no widget polling job or network transfer. Missing covers use the existing book icon. Picker preview images are generated from native widget views with synthetic sample covers.
 
 ## Cloud and lifecycle
 
